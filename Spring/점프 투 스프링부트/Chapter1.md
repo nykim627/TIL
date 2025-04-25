@@ -7,7 +7,7 @@
 
 `💻 2025.04.23`
 
-## 1. 스프링 부트란?
+## [1] 스프링 부트란?
 
 웹 어플리케이션을 쉽고 빠르게 만들 수 있도록 도와주는 자바의 웹 프레임워크.
 
@@ -15,7 +15,7 @@
 
 <br> 
 
-## 2. 스프링 부트를 배워야 하는 이유
+## [2] 스프링 부트를 배워야 하는 이유
 
 ### 1. 보안 공격 방어
 
@@ -62,7 +62,7 @@
 
 `💻 2025.04.24`
 
-## 3. 스프링 부트 개발 환경 준비
+## [3] 스프링 부트 개발 환경 준비
 1) 운영체제에 맞는 JDK 설치하기
 2) STS 설치 및 실행
 3) 스프링 부트 프로젝트 생성
@@ -70,7 +70,7 @@
    <p align="center"><img src="https://github.com/user-attachments/assets/5bb657ff-4446-4df7-aee6-ed50f257189b" alt="스프링 부트 프로젝트 생성" width=500/></p>
    
     - name : 프로젝트 이름 입력. sbb(Spring Boot Board) 입력
-    - Type : 프로젝트 관리 도구 선택. 기본값은 'Gradle - Groovy'. (싸피에서는 Maven으로 배웠는데, 이 기회에 Gradle도 써볼 예정)
+    - Type : 프로젝트 관리 도구 선택. 기본값은 'Gradle - Groovy'. (싸피에서는 Maven으로 배웠는데, 이 기회에 Gradle도 써볼 예정). 더 자세한 내용은 2-01절에서 다룸.
     - Java Version : 자바 버전 선택. 책에서는 20 선택했지만 나는 20이 안보여서 21 선택. (이후 버전 차이로 인한 에러는 하나씩 해결해보는걸로...)
 
 4) 빌드 실행 중 예외 해결 (GPT와 함께...) & 인코딩 방식 경고 해결 (UTF-8로 설정)
@@ -78,7 +78,7 @@
 
 <br>
   
-## 4. 스프링부트 맛보기
+## [4] 스프링부트 맛보기
 
 ### 1. 들어가기 전) 웹 서비스는 어떻게 동작할까?
 
@@ -151,6 +151,51 @@ public class HelloController {
 
 <br>
 
-## 5. 스프링부트 도구 설치하기
+`💻 2025.04.25`
+
+## [5] 스프링부트 도구 설치하기
+웹 프로그램 개발을 도와주는 스프링 부트의 도구(라이브러리)에 대해 알아보자.
+
+> ❓ **라이브러리**
+> 
+> 
+> : 개발 시 자주 사용하는 코드를 모아둔 것
+> 
+
+### 1. Spring Boot Devtools
+
+| Devtools 추가 전 | 프로젝트 내부 파일이 변경되더라도 로컬 서버가 변경된 클래스를 즉시 반영하지 못하여, 매번 서버를 재시작해야 함. |
+| --- | --- |
+| Devtools 추가 후 | 서버를 재시작하지 않아도 클래스를 변경할 때 서버가 자동으로 재가동. |
+
+- Spring Boot Devtools를 사용하려면 Spring Boot Devtools를 그레이들(Gradle)로 설치해야 함.
+    - build.gradle 파일 수정하기 - “의존성(dependencies)” 부분에 아래 코드 추가
+        
+        : `developmentOnly 'org.springframework.boot:spring-boot-devtools'`
+        
+        > ❓ **developmentOnly**
+        > 
+        > - 해당 라이브러리는 개발 환경에만 적용된다는 의미.
+        > - 운영 환경에 배포되는 jar, war 파일에는 이 라이브러리가 포함되지 않음.
+  
+    - build.gradle 파일에 작성한 내용을 적용하기 위해 해당 파일 선택 후 [마우스 오른쪽 버튼 → Gradle → Refresh Gradle Project] 클릭하여 필요한 라이브러리 선택
+ 
+      	<p align="center"><img src="https://github.com/user-attachments/assets/b45531bd-bd85-4fd0-add7-4b1b594b104b" alt="gradle에 devtools 설치" width=500/></p>
+        
+- 설치가 완료되면 Boot Dashboard의 서버명이 sbb에서 sbb [devtools]로 바뀜 → 서버 재시작하기
+    
+    <p align="center"><img src="https://github.com/user-attachments/assets/80e1711c-a55e-416a-a308-23502c6bc70c" alt="gradle에 devtools 설치" width=300/></p>
+
+    
+- 이제 서버를 재시작하지 않아도 프로그램 변경 사항이 잘 반영될 것. 만약 반영되지 않는 것 같다면 브라우저를 새로고침해보기.
+
+<br>
+
+`💻 2025.04.26`
+
+### 2. 롬복 설치하기
+
+
+<br><br>
 
 #springboot #was #java
