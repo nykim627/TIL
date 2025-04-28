@@ -178,7 +178,7 @@ public class HelloController {
         > - 해당 라이브러리는 개발 환경에만 적용된다는 의미.
         > - 운영 환경에 배포되는 jar, war 파일에는 이 라이브러리가 포함되지 않음.
   
-    - build.gradle 파일에 작성한 내용을 적용하기 위해 해당 파일 선택 후 [마우스 오른쪽 버튼 → Gradle → Refresh Gradle Project] 클릭하여 필요한 라이브러리 선택
+    - build.gradle 파일 수정 후에는 반드시 해당 파일을 선택 → 마우스 오른쪽 버튼 클릭 후 [Gradle → Refresh Gredle Project] 클릭해 라이브러리를 설치해야 함!
  
       	<p align="center"><img src="https://github.com/user-attachments/assets/b45531bd-bd85-4fd0-add7-4b1b594b104b" alt="gradle에 devtools 설치" width=500/></p>
         
@@ -191,11 +191,130 @@ public class HelloController {
 
 <br>
 
-`💻 2025.04.26`
+`💻 2025.04.28`
 
 ### 2. 롬복 설치하기
 
+- 롬복(Lombok) 라이브러리:  소스 코드를 작성할 때 자바 클래스에 Annotation을 작성하여 자주 쓰는 **Getter 메서드, Setter 메서드, 생성자 등을 자동으로 만들어주는** 도구. 롬복을 사용하면 좀 더 짧고 깔끔한 소스 코드를 만들 수 있음.
 
-<br><br>
 
+1. 아래 URL에서 롬복 플러그인 내려받기
+    
+    [`https://projectlombok.org/download`](https://projectlombok.org/download)
+    
+    > ❓ 플러그인 (plug-in)
+    > 
+    > - 응용 프로그램에 추가 기능을 연결하고 확장하는 데 사용하는 소프트웨어 모듈
+
+2. 내려받은 lombok.jar 파일 설치하기. 
+    - 방1) 명령 프롬프트 창 이용: lombok.jar 파일이 있는 위치로 이동 후 다음 명령을 실행해야 함.
+        
+        `java -jar lombok.jar`
+        
+    - 방2) 내려받은 lombok.jar 파일 더블클릭하여 설치.
+
+3. 설치 창에서 STS가 설치된 경로 선택 후 롬복 설치
+    
+    **Mac 경로 : application > SpringToolSuite4.app > Contents > SpringToolSuite4.ini 선택 후 우측 하단 `open` 클릭*
+
+    <p align="center"><img src="https://github.com/user-attachments/assets/231dfb01-4fbd-494c-a8f7-1b18fbf67074" alt="롬북 설치" width=500/></p>
+
+    
+5. STS 다시 시작 → build.gradle 파일 다음과 같이 수정하기
+    
+    ```xml
+    (... 생략 ...) 
+    
+    dependencies { 
+        implementation 'org.springframework.boot:spring-boot-starter-web' 
+        testImplementation 'org.springframework.boot:spring-boot-starter-test' 
+        developmentOnly 'org.springframework.boot:spring-boot-devtools' 
+        compileOnly 'org.projectlombok:lombok' 
+        annotationProcessor 'org.projectlombok:lombok'
+    } 
+    
+    (... 생략 ...)
+    
+    ```
+
+    - dependencies 내에 compileOnly, annotationProcessor 추가
+    - 컴파일할 때 롬복 라이브러리가 적용되도록 코드 추가
+
+### 3. 롬복(Lombok)으로 Getter, Setter 메서드 만들기
+
+- HelloLombok 클래스 생성 후 다음과 같이 소스 코드 작성하여 롬복이 정상적으로 동작하는지 확인
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import lombok.Getter;
+    import lombok.Setter;
+    
+    @Getter
+    @Setter
+    public class HelloLombok {
+    	private String hello;
+    	private int lombok;
+    	
+    	public static void main(String[] args) {
+    		HelloLombok helloLombok = new HelloLombok();
+    		helloLombok.setHello("헬로");
+    		helloLombok.setLombok(5);
+    		
+    		System.out.println(helloLombok.getHello());
+    		System.out.println(helloLombok.getLombok());
+    	}
+    
+    }
+    
+    ```
+    
+    - 롬복 활용 시 속성에 대한 Getter, Setter 메서드를 별도 작성하지 않고 어노테이션으로 메서드 생성
+        
+        > 소스 코드에는 Getter, Setter 메서드가 눈으로 보이지 않지만, **컴파일 단계에서 롬복이 대신 생성해주므로 컴파일된 클래스(.class)에는 Getter와 Setter 메서드가 실제로 포함**됨.
+
+### 4. 롬복으로 생성자 만들기
+
+- HelloLombok 클래스를 다음과 같이 수정하기
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import lombok.Getter;
+    import lombok.RequiredArgsConstructor;
+    import lombok.Setter;
+    
+    @RequiredArgsConstructor //생성자를 위한 어노테이션 추가 (이 경우 setter 필요없으므로 삭제)
+    @Getter
+    public class HelloLombok {
+    	private final String hello;  //final로 수정
+    	private final int lombok;    //final로 수정
+    	
+    	public static void main(String[] args) {
+    		HelloLombok helloLombok = new HelloLombok("헬로", 5);
+    		System.out.println(helloLombok.getHello());
+    		System.out.println(helloLombok.getLombok());
+    	}
+    
+    }
+    ```
+    
+    - hello, lombok 속성에 final 추가 후 `@RequiredArgsConstructor` 어노테이션 적용
+        
+        → 해당 속성을 필요로 하는 생성자가 롬복에 의해 자동으로 생성됨!!
+        
+        > ❗️ **주의**
+        > 
+        > - 만약 클래스 속성을 정의한 코드에 final이 없다면 생성자에 자동으로 포함되지 않음.
+        > - final 적용 시 속성값을 변경할 수 없기 때문에 @Setter는 의미가 없으며, Setter 메서드 또한 사용불가.
+    - `@RequiredArgsConstructor` 어노테이션은 2장부터 자주 사용하니 꼭 기억하기!
+
+
+
+
+
+
+<br><br> 
+
+---
 #springboot #was #java
