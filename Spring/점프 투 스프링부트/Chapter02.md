@@ -208,7 +208,7 @@
     <p align="center"><img src="https://github.com/user-attachments/assets/caeed0a4-03be-4653-8463-c8397a3862d7" alt="DB" width=500/></p>
     
 - DB관리를 위해서는 SQL(Structured Query Language) 언어를 사용해야 함.
-- 데이터베이스는 자바를 이해하지 못하지만, ORM(Object Relatinal Mapping)이라는 도구를 사용하면 자바 문법으로도 데이터베이스를 다룰 수 있음
+- 데이터베이스는 자바를 이해하지 못하지만, ORM(Object Relational Mapping)이라는 도구를 사용하면 자바 문법으로도 데이터베이스를 다룰 수 있음
     - 즉, ORM 이용 시 개발자는 SQL을 직접 작성하지 않아도 데이터베이스의 데이터 처리가 가능!
 
 ### 2. ORM이란?
@@ -266,4 +266,91 @@
 
 **💻 2025.04.30**
 
-### 3. JPA란?
+### 3. JPA(Java Persistence API)란?
+
+- 스프링 부트가 객체를 데이터베이스에 저장하고 관리하기 위한 ORM 기술의 표준으로 사용하는 인터페이스 모음
+- JPA는 인터페이스 모음이므로, 이 인터페이스를 구현한 실제 클래스가 필요. ⇒ 하이버네이트(Hibernate)
+- 하이버네이트 : JPA의 인터페이스를 구현한 실제 클래스이자 자바의 ORM 프레임워크로, 스프링 부트에서 데이터베이스를 관리하기 쉽게 도와줌
+
+### 4. H2 데이터베이스 설치하기
+
+- JPA를 사용해 데이터를 관리하기 위해 먼저 데이터베이스를 설치할 것.
+- **H2 데이터베이스** : ***자바로 작성된 관계형 데이터베이스 관리 시스템***
+    - 설치가 필요 없고 용량이 가벼우며 **개발용 로컬 DB로 사용하기 좋은** DBMS
+    - MySQL, 오라클 DB, MS SQL 등의 굵직한 DBMS보다 설치하기도 쉽고 사용하기도 편리함.
+    - 개발 시에는 H2 데이터베이스를 사용하여 빠르게 개발하고 실제 운영 시스템에는 좀 더 규모 있는 DBMS를 사용하는 것이 일반적인 방법
+- 설치 방법
+    1. build.gradle 파일의 `dependencies`에 `runtimeOnly 'com.h2database:h2’` 를 추가로 입력해 H2 데이터베이스를 설치함
+        
+        → 이후 해당 파일에서 마우스 오른쪽 버튼 누르고 [Gradle → Refresh Gradle Project] 클릭!
+        
+    2. 설치한 H2 데이터베이스르 사용하기 위해 `application.properties` 파일에 아래와 같은 내용 작성
+        
+        (작성 전에 해당 파일은 아무런 내용이 없을 것)
+        
+        ```
+        # DATABASE
+        spring.h2.console.enabled=true
+        spring.h2.console.path=/h2-console
+        spring.datasource.url=jdbc:h2:~/local
+        spring.datasource.driverClassName=org.h2.Driver
+        spring.datasource.username=[DB사용자명]
+        spring.datasource.password=[DB비밀번호]
+        ```
+        
+        - `spring.h2.console.enabled` : H2 콘솔에 접속할 것인지를 묻는 항목. true로 설정.
+            
+            > H2 콘솔은 H2 데이터베이스를 웹 UI로 보여줌
+            > 
+        - `spring.h2.console.path` : H2 콘솔로 접속하기 위한 URL 경로.
+        - `spring.datasource.url` : 데이터베이스에 접속하기 위한 경로
+        - `spring.datasource.driverClassName` : 데이터베이스에 접속할 때 사용하는 드라이버 클래스명
+        - `spring.datasource.username` :  데이터베이스의 사용자명 (사용자명은 기본값인 sa로 설정)
+        - `spring.datasource.password` : 데이터베이스의 비밀번호 (여기서는 로컬에서 개발 용도로만 사용하므로 비밀번호를 설정하지 않고 비워둠)
+    3. spring.datasource.url에 설정한 경로에 해당하는 데이터베이스 파일 만들기
+        - `spring.datasource.url`을 `jdbc:h2:~/local`로 설정했으므로 사용자의 홈 디렉터리 아래에 H2 데이터베이스 파일로 `local.mv.db`라는 파일을 생성해야 함.
+            
+            > 만약 jdbc:h2:~/test라고 설정했다면 test.mv.db라는 파일을 생성해야 함
+            > 
+        - (macOS 기준) 명령 프롬프트 실행 후 사용자의 홈 디렉터리 경로에서 `touch local.mv.db` 명령 입력해서 파일 생성하기 → ls local.mv.db 명령 입력해서 파일 생성 확인
+            
+            > macOS 환경이라면 사용자의 홈 디렉터리는 /Users/(사용자명)
+            > 
+            
+          <p align="center"><img src="https://github.com/user-attachments/assets/c770dbfd-97e2-4429-a6c3-138508d5d212" alt="명령 프롬프트" width=500/></p>
+            
+    4. 홈 디렉터리에서 local.mv.db 파일을 확인할 수 있음
+        - 이때 파일은 아무 내용이 없는 빈 파일로 생성됨
+        - 파일 사이즈는 반드시  0kb로 생성되어야 함. 만약 1kb로 생성되었다면 파일이 잘못 생성된 것!
+
+       <p align="center"><img src="https://github.com/user-attachments/assets/31faa688-1eac-4961-b571-3d41b9693c78" alt="홈 디렉터리" width=500/></p>
+        
+    6. H2 콘솔을 통해 데이터베이스에 접속하기
+        - 로컬 서버를 다시 시작한 후 브라우저에서 다음 URL 주소로 H2 콘솔에 접속하기
+            
+            ```
+            http://localhost:8080/h2-console
+            ```
+            
+        - 콘솔 화면 확인 (언어 설정 ‘한국어’로 변경 가능)
+          
+          <p align="center"><img src="https://github.com/user-attachments/assets/1de43ad3-968d-41c3-aa55-f44095ed9bae" alt="H2 콘솔 화면" width=500/></p>
+            
+        - 콘솔 화면에서 JDBC URL 경로를 `application.properties` 파일에 설정한 데이터베이스 연결 주소인 `jdbc:h2:~/local`로 변경 후 [연결] 버튼 클릭하기
+            
+            캡처
+            
+            > ❓ **JDBC**
+            > 
+            > - Java Database Connectivity의 줄임말로, 자바 프로그램에서 데이터베이스와 상호 작용을 하는 자바 API 기술
+            > - 자바 프로그램과 DB를 연결하여 데이터베이스 작업을 수행할 수 있음
+        - 다음과 같이 접속된 화면 확인 가능!!
+            
+          <p align="center"><img src="https://github.com/user-attachments/assets/4fa9c5af-0df2-48f2-a0f7-cfc6e964310a" alt="H2 콘솔 접속화면" width=500/></p>
+            
+
+<br>
+
+**💻 2025.05.01**
+
+### 5. JPA 환경 설정하기
