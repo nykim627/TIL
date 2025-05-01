@@ -354,3 +354,239 @@
 **💻 2025.05.01**
 
 ### 5. JPA 환경 설정하기
+
+- 자바 프로그램에서 데이터베이스에 데이터를 저장하거나 조회하려면 JPA를 사용해야 함.
+    1. build.gradle 파일 수정 : dependencies에 `implementation 'org.springframework.boot:spring-boot-starter-data-jpa’` 코드 추가 및 Refresh Gradle해서 JPA 라이브러리 설치하기
+        
+        > ❓ **implementation**
+        > 
+        > - build.gradle 파일에서 작성한 implementation은 필요한 라이브러리 설치를 위해 가장 일반적으로 사용하는 설정
+        > - 해당 라이브러리가 변경되더라도 이 라이브러리와 연관된 모든 모듈을 컴파일하지 않고, **변경된 내용과 관련이 있는 모듈만 컴파일**하므로 프로젝트를 리빌드(rebuild)하는 속도가 빠름
+    2. application.properties 파일 수정 : 아래 항목 추가
+        
+        ```
+        # JPA
+        spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect
+        spring.jpa.hibernate.ddl-auto=update
+        ```
+        
+        - `spring.jpa.properties.hibernate.dialect` : 스프링 부트와 하이버네이트를 함께 사용할 때 필요한 설정 항목. 표준 SQL이 아닌 하이버네이트만의 SQL를 사용할 때 필요한 항목으로, 하이버네이트의 `org.hibernate.dialect.H2Dialect`를 설정함.
+        - `spring.jpa.hibernate.ddl-auto` : 엔티티를 기준으로 데이터의 테이블을 생성하는 규칙을 설정
+            - `none` : 엔티티가 변경되더라도 데이터베이스를 변경하지 않음
+            - `update` : 엔티티의 변경된 부분만 데이터베이스에 적용함
+            - `validate` : 엔티티와 테이블 간에 차이점이 있는지 검사만 함
+            - `create` : 스프링 부트 서버를 시작할 때 테이블을 모두 삭제한 후 다시 생성함
+            - `create-drop` : `create`와 동일하지만 스프링 부트 서버를 종료할 때에도 테이블을 모두 삭제함
+            - 개발 환경에서는 보통 `update` 모드 사용, 운영 환경에서는 `none` 또는 `validate`를 주로 사용
+
+<br>
+
+## [4] 엔티티로 테이블 매핑하기
+
+: JPA를 사용하기 위해 데이터베이스의 구성 요소와 엔티티에 대해 알아볼 것
+
+### 1. 데이터베이스 구성 요소
+
+<p align="center"><img src="https://github.com/user-attachments/assets/52bae31d-7d72-4499-a598-071af22033cc" alt="H2 콘솔 접속화면" width=500/></p>
+
+`출처 : [https://velog.io/@donghoim/정보처리산업기사-70강-관계형-데이터베이스의-구조](https://velog.io/@donghoim/%EC%A0%95%EB%B3%B4%EC%B2%98%EB%A6%AC%EC%82%B0%EC%97%85%EA%B8%B0%EC%82%AC-70%EA%B0%95-%EA%B4%80%EA%B3%84%ED%98%95-%EB%8D%B0%EC%9D%B4%ED%84%B0%EB%B2%A0%EC%9D%B4%EC%8A%A4%EC%9D%98-%EA%B5%AC%EC%A1%B0)` 
+
+### 2. 엔티티 속성 구성하기
+
+: SBB는 질문과 답변을 할 수 있는 게시판 서비스이므로, SBB의 질문과 답변 데이터를 저장할 데이터베이스 테이블과 매핑되는 질문과 답변 엔티티가 필요
+
+> **❓ 엔티티**
+> 
+> - 데이터베이스 테이블과 매핑되는 자바 클래스
+> - 모델 또는 도메인 모델이라고도 함. 이 책에서는 이것을 구분하지 않고 테이블과 매핑되는 클래스를 모두 엔티티라 지칭할 것.
+> - 엔티티의 각 속성은 데이터베이스 테이블의 열과 매핑이 될 것.
+- 질문(Question) 엔티티
+    
+    
+    | **속성 이름** | **설명** |
+    | --- | --- |
+    | id | 질문 데이터의 고유 번호 |
+    | subject | 질문 데이터의 제목 |
+    | content | 질문 데이터의 내용 |
+    | createDate | 질문 데이터를 작성한 일시 |
+- 답변(Answer) 엔티티
+    
+    
+    | **속성 이름** | **설명** |
+    | --- | --- |
+    | id | 답변 데이터의 고유 번호 |
+    | question | 질문 데이터 (어떤 질문에 대한 답변인지 알아야 하므로 이 속성이 필요) |
+    | content | 답변 데이터의 내용 |
+    | createDate | 답변 데이터를 작성한 일시 |
+
+### 3. 질문 엔티티 만들기
+
+: src/main/java 폴더의 com.mysite.sbb 패키지에 Question 클래스 생성하기
+
+```java
+package com.mysite.sbb;
+
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Entity
+public class Question {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Integer id;
+	
+	@Column(length = 200)
+	private String subject;
+	
+	@Column(columnDefinition = "TEXT")
+	private String content;
+	
+	private LocalDateTime createDate;
+}
+```
+
+- @Entity : 스프링 부트가 Question 클래스를 엔티티로 인식하기 위한 어노테이션
+- @Getter, @Setter : Getter, Setter 자동생성 위해 롬북의 어노테이션 적용
+- @Id : 중복되면 안되는 고유 번호들을 나타내는 기본키 지정
+- @GeneratedValue : 데이터 저장 시 해당 속성에 값을 일일이 입력하지 않아도 자동으로 1씩 증가하여 저장
+    - `strategy` 옵션 : 고유한 번호를 생성하는 방법을 지정하는 옵션.
+    - `GenerationType.IDENTITY` : 해당 속성만 별도로 번호가 차례대로 늘어나도록 할 때 사용
+    - 이 옵션 생략 시 해당 어노테이션이 지정된 모든 속성에 번호를 차례로 생성하므로 순서가 일정한 고유 번호를 가질 수 없으므로 보통 `strategy = GenerationType.IDENTITY`를 많이 사용
+- @Column : 테이블의 열에 대한 세부 설정을 위해 사용.
+    - length 옵션 : 열의 길이 설정 시 사용
+    - columnDefinition은 열 데이터의 유형이나 성격을 정의할 때 사용
+        - columnDefinition = “TEXT” : “텍스트”를 열 데이터로 넣을 수 있음. 글자 수를 제한할 수 없는 경우 사용
+    
+    > **❓ @Transient**
+    > 
+    > - 엔티티의 속성을 테이블의 열로 만들지 않고 클래스의 속성 기능으로만 사용하고자 할 때 적용
+    > - 엔티티의 속성은 @Column을 사용하지 않더라고 자동으로 테이블의 열로 인식. 만약 테이블의 열로 인식하고 싶지 않다면 @Transient를 사용해야 함.
+    
+    > ❓ **엔티티의 속성 이름과 테이블의 열 이름의 차이**
+    > 
+    > - Question 엔티티에서 createDate 속성의 이름은 데이터베이스의 테이블에서는 create_date라는 열 이름으로 설정.
+    > - 즉, 엔티티에서 카멜 케이스(camelCase) 형식의 이름은 데이터베이스의 테이블에서는 snake_case 형식으로 변경됨.
+    
+    > ❓ **일반적으로 엔티티 생성 시 Setter 메서드를 사용하지 않기를 권장**
+    > 
+    > - 엔티티는 데이터베이스와 바로 연결되는데, 데이터를 자유롭게 변경할 수 있는 Setter 메서드를 허용하는 것이 안전하지 않다고 판단
+    > - 그렇다면 **Setter 메서드 없이 어떻게 엔티티에 값을 저장**하는가?
+    >     - 엔티티는 생성자에 의해서만 엔티티의 값을 저장할 수 있게 하고, 데이터를 변경해야 할 경우에는 메서드를 추가로 작성하면 됨.
+    > - ***but, 이 책은 복잡도를 낮추고 원활한 설명을 위해 Setter 메서드를 추가하여 진행할 것***
+
+### 4. 답변 엔티티 만들기
+
+: src/main/java 폴더의 com.mysite.sbb 패키지에 Answer 클래스 생성하기
+
+```java
+package com.mysite.sbb;
+
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Entity
+public class Answer {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Integer id;
+	
+	@Column(columnDefinition = "TEXT")
+	private String content;
+	
+	private LocalDateTime createDate;
+	
+	@ManyToOne   //답변에서 질문 참조하기
+	private Question question;
+}
+```
+
+- 답변을 통해 질문의 제목을 알고 싶다면 answer.getQuestion().getSubject()를 사용해 접근가능할 것
+- question 속성만 추가하면 안되고, 질문 엔티티와 연결된 속성이라는 것을 답변 엔티티에 표시해야 함
+    - 게시판 서비스에서는 하나의 질문에 여러 개의 답변이 달릴 수 있으므로, question 속성에 @ManyToOne 을 적용해 질문 엔티티와 N : 1 관계를 나타냄. (실제 데이터베이스에서는 외래키 관계가 생성될 것)
+    - N : 1에서 1에 대응하는 질문 엔티티가 부모 엔티티, N에 대응하는 답변 엔티티가 자식 엔티티!
+
+> **❓ int 대신 Integer를 사용하는 이유**
+> 
+> - JPA(Hibernate)에서 기본 키 타입으로 null을 허용해야 하기 때문
+> - JPA가 새 엔티티를 DB에 저장할 때, `id == null`이면 아직 저장 안 됨 (즉 저장 시 `INSERT`), `id ≠ null`이면 이미 저장됨 (즉, 저장 시 `update`)로 인식.
+> - 하지만 int은 기본값이 0이고 null을 가질 수 없으므로 JPA가 혼동할 수 있음
+> - @Id는 JPA가 null을 체크할 수 있도록  보통 Integer, Long 같은 래퍼 클래스의 사용을 권장
+
+### 5. 질문에서 답변 참조하기
+
+: 양방향 참조를 위해서는 필요. 
+
+```java
+package com.mysite.sbb;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Entity
+public class Question {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Integer id;
+	
+	@Column(length = 200)
+	private String subject;
+	
+	@Column(columnDefinition = "TEXT")
+	private String content;
+	
+	private LocalDateTime createDate;
+	
+	@OneToMany(mappedBy = "question", cascade = CascadeType.REMOVE)
+	private List<Answer> answerList;
+}
+```
+
+- `Answer` 객체들로 구성된 `answerList`를 `Question` 엔티티의 속성으로 추가하고 `@OneToMany` 적용.
+- 이제 질문에서 답변을 참조하려면 `question.getAnswerList()`를 호출하면 됨!
+- `mappedBy` 옵션 : 참조 엔티티의 속성명 정의. 즉, `Answer` 엔티티에서 `Question` 엔티티를 참조한 속성인 `question`을 `mappedBy`에 전달해야 함!
+    - "이 연관관계는 저쪽이 주인이야"라고 선언하였기 때문에, 테이블에서는 answerList라는 속성이 따로 보이지는 않음
+- `cascade` 옵션 : JPA에서 엔티티 간의 연관 관계 정의 시 사용. 주로 부모 엔티티의 상태 변경에 따라 자식 엔티티에도 동일한 상태 변경을 적용하려는 경우 사용. `CascadeType.REMOVE`를 사용했으므로, 부모 엔티티가 삭제될 때, 자식 엔티티도 함께 삭제하라는 설정.
+
+### 6. 테이블 확인하기
+
+- H2 콘솔에 접속해 엔티티를 통해 Question과 Answer 테이블이 자동 생성된 것을 확인
+    
+  <p align="center"><img src="https://github.com/user-attachments/assets/9d42939d-df59-4dce-ae14-a2432347bdfa" alt="H2 콘솔 접속화면" width=500/></p>
+    
+
+<br>
+
+**💻 2025.05.02**
+
+## [5] 리포지터리로 데이터베이스 관리하기
