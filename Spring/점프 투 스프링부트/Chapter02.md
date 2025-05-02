@@ -590,3 +590,56 @@ public class Question {
 **💻 2025.05.02**
 
 ## [5] 리포지터리로 데이터베이스 관리하기
+### 1. 레포지토리 생성하기
+
+- 엔티티와 같이 데이터를 관리하려면 데이터베이스와 연동하는 JPA 레포지터리가 반드시 필요함.
+- 레포지토리 : 데이터베이스 테이블의 데이터들을 저장(C), 조회(R), 수정(U), 삭제(D) 등을 할 수 있도록 도와주는 인터페이스. 테이블에 접근하고, 데이터를 관리하는 메서드를 제공함.
+1. com.mysite.sbb 패키지에서 QuestionRepository 인터페이스 생성하기
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import org.springframework.data.jpa.repository.JpaRepository;
+    
+    public interface QuestionRepository extends JpaRepository<Question, Integer> {
+    
+    }
+    ```
+    
+2. 생성한 인터페이스를 레포지토리로 만들기 위해 JpaRepository 인터페이스를 상속받기. 
+    
+    > **❓ JpaRepository**
+    > 
+    > - JPA가 제공하는 인터페이스 중 하나로 CRUD 작업을 처리하는 메서드들을 이미 내장하고 있어 데이터 관리 작업을 좀 더 편리하게 처리할 수 있음
+    > - JpaRepository<Question, Integer>는 Question 엔티티로 레포지토리를 생성하며, Question 엔티티의 기본키가 Integer라는 의미
+    
+    > **❓ CRUD**
+    > 
+    > - Create, Read, Update, Delete
+    > - 데이터 처리의 기본 기능
+3. 마찬가지로 AnswerRepository 인터페이스 생성하기
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import org.springframework.data.jpa.repository.JpaRepository;
+    
+    public interface AnswerRepository extends JpaRepository<Answer, Integer> {
+    
+    }
+    ```
+    
+
+### 2. JUnit 설치하기
+
+- 레포지토리를 이용하여 데이터를 저장하려면 질문을 등록하는 화면과, 사용자가 입력한 질문 관련 정보를 저장하는 컨트롤러, 서비스 파일 등이 필요함
+- 하지만 JUnit 사용 시 이러한 프로세스를 따르지 않고 **레포지토리만 개별적으로 실행해 테스트해볼 수 있음**
+- JUnit : 테스트 코드를 작성하고, 작성한 테스트 코드를 실행할 때 사용하는 자바의 테스트 프레임워크. 레포지토리뿐만 아니라 소프트웨어 개발 시 테스트 작업을 수행할 때 많이 사용.
+1. build.gradle : dependencies 마지막에 아래와 같은 내용 추가 + 라이브러리 설치
+    
+    ```
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    ```
+    
+    - testRuntimeOnly : 해당 라이브러리가 테스트 실행 시에만 사용됨
