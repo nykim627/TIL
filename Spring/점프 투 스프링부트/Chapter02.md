@@ -1,4 +1,4 @@
-# Chapter02. 스프링 부트의 기본 기능 익히기
+![image](https://github.com/user-attachments/assets/66b0ea25-8904-45bb-a283-cbcfefd8eb23)# Chapter02. 스프링 부트의 기본 기능 익히기
 > 📖 출처 : [점프 투 스프링부트](https://wikidocs.net/book/7601) 를 읽고 학습한 내용을 기반으로 작성한 TIL입니다.
 > 
 
@@ -643,3 +643,95 @@ public class Question {
     ```
     
     - testRuntimeOnly : 해당 라이브러리가 테스트 실행 시에만 사용됨
+  
+<br>
+
+**💻 2025.05.05**
+
+### 3. 질문 데이터 저장하기
+
+: 질문 엔티티로 테이블을 만들었으니 이제 만들어진 테이블에 데이터를 생성하고 저장해 보자.
+
+1. `com.mysite.sbb` 패키지에 `SbbApplicationTests.java` 파일 수정하기
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import java.time.LocalDateTime;
+    
+    import org.junit.jupiter.api.Test;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.boot.test.context.SpringBootTest;
+    
+    @SpringBootTest
+    class SbbApplicationTests {
+    	
+    	@Autowired
+    	private QuestionRepository questionRepository;
+    	
+    	@Test
+    	void testJpa() {
+    		Question q1 = new Question();
+    		q1.setSubject("sbb가 무엇인가요?");
+    		q1.setContent("sbb에 대해서 알고 싶습니다.");
+    		q1.setCreateDate(LocalDateTime.now());
+    		this.questionRepository.save(q1); //첫번째 질문 저장
+    		
+    		Question q2 = new Question();
+    		q2.setSubject("스프링부트 모델 질문입니다.");
+    		q2.setContent("id는 자동으로 생성되나요?");
+    		q2.setCreateDate(LocalDateTime.now());
+    		this.questionRepository.save(q2); //두번째 질문 저장
+    	}
+    
+    	@Test
+    	void contextLoads() {
+    	}
+    
+    }
+    
+    ```
+    
+    - 질문 엔티티의 데이터를 생성할 때 레포지터리(QuestionRepository)가 필요하므로 @Autowired 어노테이션을 통해 QuestionRepository의 객체를 주입함
+        
+        > **❓ 의존성 주입(DI)**
+        > 
+        > - 스프링이 객체를 대신 생성하여 주입하는 기법
+    - @Autowired : questionRepository 변수는 선언만 되어 있고 그 값이 비어 있음. 하지만 @Autowired 어노테이션을 해당 변수에 적용하면 스프링 부트가 questionRepository 객체를 자동으로 만들어 주입함.
+    - 순환 참조 문제와 같은 이유로 개발 시 @Autowired 보다는 생성자를 통한 객체 주입 방식을 권장하지만, **테스트 코드의 경우 JUnit이 생성자를 통한 객체 주입을 지원하지 않으므로 테스트 코드 작성 시에만 @Autowwired를 사용**하고 실제 코드 작성 시에는 생성자를 통해 객체 주입 방식을 사용해볼 것.
+    - @Test : testJpa 메서드가 테스트 메서드임을 나타냄
+        - SbbApplicationTests 클래스를 JUnit으로 실행 시 @Test 어노테이션이 붙은 testJpa 메서드가 실행됨
+    - testJpa : q1, q2라는 질문 엔티티의 객체를 생성하고 QuestionRepository를 이용하여 그 값을 데이터베이스에 저장함.
+        
+        
+        | ID | Content | CreateDate | Subject |
+        | --- | --- | --- | --- |
+        | 1 | sbb에 대해서 알고 싶습니다. | 2023-09-01-15:30:30 | sbb가 무엇인가요? |
+        | 2 | id는 자동으로 생성되나요? | 2023-09-01-15:30:30 | 스프링 부트 모델 질문입니다. |
+2. `SbbApplicationTests` 클래스 실행하기 
+    - [Run → Run As → JUnit Test] 순서대로 선택
+    - 로컬 서버가 이미 구동 중이라면 `The file is locked: nio:/Users/pahkey/local.mv.db`와 비슷한 오류가 발생할 것
+        - H2 데이터베이스는 파일 기반의 데이터베이스인데, 이미 로컬 서버가 동일한 데이터베이스 파일(local.mv.db)을 점유하고 있어 발생하는 오류
+        - 테스트할 때는 먼저 로컬 서버를 중지해야 함.
+    - 오류가 발생한다면 로컬 서버 중시 후 다시 테스트 실행해보기
+        
+        <p align="center"><img src="https://github.com/user-attachments/assets/c720a1ee-a2f7-4dc8-995c-79700cfe6425" alt="Junit test" width=500/></p>
+        
+        - 초록색 바가 표시되면 성공이고 빨간색 바가 표시되면 실패를 의미
+3. 실제 데이터베이스에 값이 잘 들어갔는지 확인하기 위해 다시 로컬 서버를 시작하고 H2 콘솔에 접속하여 다음 쿼리문 실행
+    
+    ```
+    SELECT * FROM QUESTION
+    ```
+
+    <p align="center"><img src="https://github.com/user-attachments/assets/5a446335-11d7-47c9-8111-67c6448645c0" alt="h2 콘솔 접속화면" width=500/></p>
+    
+    - 우리가 저장한 Question 객체 값이 데이터베이스의 데이터로 저장된 것을 확인 가능
+    - id는 질문 엔티티의 기본키로, 2-04절에서 질문 엔티티를 생성할 때 `@GeneratedValue`를 활용해 설정했던 대로 속성값이 자동으로 1씩 증가하는 것을 확인 가능
+    - 내가 test를 두번 했더니 데이터가 두 번 생성된 것으로 보임
+
+<br>
+
+**💻 2025.05.06**
+
+### 4. 질문 데이터 조회하기
