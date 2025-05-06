@@ -718,20 +718,424 @@ public class Question {
         <p align="center"><img src="https://github.com/user-attachments/assets/c720a1ee-a2f7-4dc8-995c-79700cfe6425" alt="Junit test" width=500/></p>
         
         - 초록색 바가 표시되면 성공이고 빨간색 바가 표시되면 실패를 의미
+        - 교재에 없던 contextLoads() 메서드를 넣어버림…
+     
+          
 3. 실제 데이터베이스에 값이 잘 들어갔는지 확인하기 위해 다시 로컬 서버를 시작하고 H2 콘솔에 접속하여 다음 쿼리문 실행
     
     ```
     SELECT * FROM QUESTION
     ```
 
-    <p align="center"><img src="https://github.com/user-attachments/assets/5a446335-11d7-47c9-8111-67c6448645c0" alt="h2 콘솔 접속화면" width=500/></p>
+    <p align="center"><img src="https://github.com/user-attachments/assets/ac177ccf-f4a4-4417-aed2-a941fb8a9207" alt="h2 콘솔 접속화면" width=600/></p>
+
+
     
     - 우리가 저장한 Question 객체 값이 데이터베이스의 데이터로 저장된 것을 확인 가능
     - id는 질문 엔티티의 기본키로, 2-04절에서 질문 엔티티를 생성할 때 `@GeneratedValue`를 활용해 설정했던 대로 속성값이 자동으로 1씩 증가하는 것을 확인 가능
-    - 내가 test를 두번 했더니 데이터가 두 번 생성된 것으로 보임
 
 <br>
 
 **💻 2025.05.06**
 
-### 4. 질문 데이터 조회하기
+## [6] 질문 데이터 조회하기
+
+: 리포지터리가 제공하는 메서드들을 하나씩 살펴보고 이를 활용해 데이터를 조회해 보자.
+
+*(편의상 `testJpa` 메서드 하나만을 가지고 JPA의 여러 기능을 테스트할 것)*
+
+### 1. findAll 메서드
+
+`SbbApplicationTests.java` 에서 `testJpa` 메서드를 다음과 같이 수정
+
+```java
+package com.mysite.sbb;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class SbbApplicationTests {
+	
+	@Autowired
+	private QuestionRepository questionRepository;
+	
+	@Test
+	void testJpa() {
+		List<Question> all = this.questionRepository.findAll();
+		
+		assertEquals(2, all.size());
+		
+		Question q = all.get(0);
+		assertEquals("sbb가 무엇인가요?", q.getSubject());
+	}
+
+}
+
+```
+
+- `findAll()` : 모든 데이터 조회를 위해 레포지토리의 `findAll` 메서드 사용
+- `assertEquals(기댓값, 실젯값)` : 기댓값과 실젯값이 동일하지 않다면 테스트는 실패로 처리.
+    - 테스트1) 앞서 2개의 질문 데이터를 저장했기 때문에 데이터 사이즈는 2가 되어야 하므로, 데이터 크기가 2인지 확인하기 위해 JUnit의 `assertEquals` 메서드 사용
+    - 테스트2) 앞서 저장한 첫 번째 데이터의 제목이 “sbb가 무엇인가요?” 데이터와 일치하는지 테스트
+- 로컬 서버 중지 후 JUnit Test 다시 한 번 실행 시 테스트가 성공했다고 표시되면 됨
+
+### 2. findById 메서드
+
+: 질문 엔티티의 기본키인 id의 값을 활용한 데이터 조회하기
+
+```java
+package com.mysite.sbb;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.Optional;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class SbbApplicationTests {
+	
+	@Autowireda
+	private QuestionRepository questionRepository;
+	
+	@Test
+	void testJpa() {
+		Optional<Question> oq = this.questionRepository.findById(1);
+		
+		if(oq.isPresent()) {
+			Question q = oq.get();
+			assertEquals("sbb가 무엇인가요?", q.getSubject());
+		}
+	}
+
+}
+```
+
+- `questionRepository`를 사용하여 데이터베이스에서 id가 1인 질문 조회
+- `*findById`로 호출한 값이 존재할 수도 있고, 존재하지 않을 수도 있기 때문에 리턴 타입으로 `Optional` 사용*. (`Question` 아님!)
+    - `Optional` : null값을 유연하게 처리하기 위한 클래스로, `isPresent()` 메서드로 값이 존재하는지 확인 가능
+        
+        → 값이 존재한다면 `get()` 메서드를 통해 실제 `Question` 객체의 값을 얻음 
+        
+        → `assertEquals` 메서드를 통해 **기댓값과 질문의 제목이 일치하는 경우**에 JUnit 테스트 통과!
+        
+
+### 3. findBySubject 메서드
+
+1. 레포지토리에서 `findBySubject` 메서드를 기본적으로 제공하지 않기 때문에, 다음과 같이 `QuestionRepository` 인터페이스를 변경해야 함 → `QuestionRepository.java`를 수정해보자.
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import org.springframework.data.jpa.repository.JpaRepository;
+    
+    public interface QuestionRepository extends JpaRepository<Question, Integer> {
+    	Question findBySubject(String subject);
+    
+    }
+    ```
+    
+2. `SbbApplicationTests.java`를 수정해 `subject` 값으로 테이블에 저장된 데이터 조회 가능
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    
+    import org.junit.jupiter.api.Test;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.boot.test.context.SpringBootTest;
+    
+    @SpringBootTest
+    class SbbApplicationTests {
+    	
+    	@Autowired
+    	private QuestionRepository questionRepository;
+    	
+    	@Test
+    	void testJpa() {
+    		Question q = this.questionRepository.findBySubject("sbb가 무엇인가요?");
+    		assertEquals(1, q.getId());
+    	}
+    
+    }
+    ```
+    
+    - 테스트 코드 실행 시 성공적으로 통과됨
+    - 인터페이스에 findBySubject라는 메서드를 선언만 하고 구현하지 않았는데 도대체 어떻게 실행되는 것인가? ⇒ **JPA에 레포지토리의 메서드명을 분석하여 쿼리를 만들고 실행하는 기능**이 있기 때문!!
+        - `findBy + 엔티티의 속성명` 과 같은 레포지토리 메서드를 작성하면 입력한 속성값으로 데이터 조회 가능!
+3. findBySubject 메서드 호출 시 실제 데이터베이스에서 실행되는 쿼리문은 STS의 콘솔(console) 로그에서 확인 가능. 이 로그 확인을 위해 다음과 같이 `application.properties` 파일을 수정하기(맨 아래 두 줄 추가됨)
+    
+    ```
+    spring.application.name=sbb
+    
+    # DATABASE
+    spring.h2.console.enabled=true
+    spring.h2.console.path=/h2-console
+    spring.datasource.url=jdbc:h2:~/local
+    spring.datasource.driverClassName=org.h2.Driver
+    spring.datasource.username=sa
+    spring.datasource.password=
+    
+    # JPA
+    spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect
+    spring.jpa.hibernate.ddl-auto=update
+    spring.jpa.properties.hibernate.format_sql=true
+    spring.jpa.properties.hibernate.show_sql=true
+    
+    ```
+    
+4. 다시 한번 테스트 코드 실행 시 다음과 같이 콘솔 로그에서 데이터베이스에서 실행된 쿼리문 확인 가능
+    
+   <p align="center"><img src="https://github.com/user-attachments/assets/36965b10-1970-48db-bac1-4bcbb8a817ad" alt="자바 콘솔 접속화면" width=600/></p>
+
+    
+    - 실행된 쿼리문 중 `where` 문에 조건으로 `subject`가 포함된 것 확인 가능
+
+### 4. findBySubjectAndContent 메서드
+
+- SQL을 활용해 데이터베이스에서 두 개의 열을 조회하기 위해서는 `And` 연산자를 사용
+- `QuestionRepository`에 `findBySubjectAndContent` 메서드 추가
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import org.springframework.data.jpa.repository.JpaRepository;
+    
+    public interface QuestionRepository extends JpaRepository<Question, Integer> {
+    	Question findBySubject(String subject);
+    	Question findBySubjectAndContent(String subject, String Content);
+    
+    }
+    
+    ```
+    
+- 테스트 코드 수정
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    
+    import org.junit.jupiter.api.Test;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.boot.test.context.SpringBootTest;
+    
+    @SpringBootTest
+    class SbbApplicationTests {
+    	
+    	@Autowired
+    	private QuestionRepository questionRepository;
+    	
+    	@Test
+    	void testJpa() {
+    		Question q = this.questionRepository.findBySubjectAndContent("sbb가 무엇인가요?", "sbb에 대해서 알고 싶습니다.");
+    		assertEquals(1, q.getId());
+    	}
+    
+    }
+    ```
+    
+- 콘솔 로그 확인
+
+  <p align="center"><img src="https://github.com/user-attachments/assets/66a89b54-969e-40bf-a834-d3fedb119d7b" alt="자바 콘솔 접속화면" width=600/></p>
+    
+    - where 문에 and 연산자가 사용되어 subject와 content 열을 조회함
+- 이 밖에 조합할 수 있는 메서드 예시
+    
+    
+    | SQL 연산자 | 리포지터리의 메서드 예시 | 설명 |
+    | --- | --- | --- |
+    | And | `findBySubjectAndContent(String subject, String content)` | `Subject`, `Content` 열과 일치하는 데이터를 조회 |
+    | Or | `findBySubjectOrContent(String subject, String content)` | `Subject`열 또는 `Content` 열과 일치하는 데이터를 조회 |
+    | Between | `findByCreateDateBetween(LocalDateTime fromDate, LocalDateTime toDate)` | `CreateDate` 열의 데이터 중 정해진 범위 내에 있는 데이터를 조회 |
+    | LessThan | `findByIdLessThan(Integer id)` | `Id` 열에서 조건보다 작은 데이터를 조회 |
+    | GreaterThanEqual | `findByIdGreaterThanEqual(Integer id)` | `Id` 열에서 조건보다 크거나 같은 데이터를 조회 |
+    | Like | `findBySubjectLike(String subject)` | `Subject` 열에서 문자열 ‘subject’와 같은 문자열을 포함한 데이터를 조회 |
+    | In | `findBySubjectIn(String[] subjects)` | `Subject` 열의 데이터가 주어진 배열에 포함되는 데이터만 조회 |
+    | OrderBy | `findBySubjectOrderByCreateDateAsc(String subject)` | `Subject` 열 중 조건에 일치하는 데이터를 조회하여 `CreateDate` 열을 오름차순으로 정렬하여 반환 |
+
+### 5. findBySubjectLike 메서드
+
+: `Like`를 사용하여 질문 엔티티의 `subject` 열 값들 중 특정 문자열을 포함하는 데이터 조회하기 
+
+- QuestionRepository에 findBySubjectLike 메서드 추가 (반환값은 `List`!!)
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import java.util.List;
+    
+    import org.springframework.data.jpa.repository.JpaRepository;
+    
+    public interface QuestionRepository extends JpaRepository<Question, Integer> {
+    	Question findBySubject(String subject);
+    	Question findBySubjectAndContent(String subject, String Content);
+    	List<Question> findBySubjectLike(String subject);
+    
+    }
+    ```
+    
+- 테스트 코드 수정
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    
+    import java.util.List;
+    
+    import org.junit.jupiter.api.Test;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.boot.test.context.SpringBootTest;
+    
+    @SpringBootTest
+    class SbbApplicationTests {
+    	
+    	@Autowired
+    	private QuestionRepository questionRepository;
+    	
+    	@Test
+    	void testJpa() {
+    		List<Question> qList = this.questionRepository.findBySubjectLike("sbb%");
+    		Question q = qList.get(0);
+    		assertEquals("sbb가 무엇인가요?", q.getSubject());
+    	}
+    
+    }
+    ```
+    
+- % 표기 위치에 따른 의미
+    
+    
+    | 표기 예 | 표기 위치에 따른 의미 |
+    | --- | --- |
+    | `sbb%` | 'sbb'로 시작하는 문자열 |
+    | `%sbb` | 'sbb'로 끝나는 문자열 |
+    | `%sbb%` | 'sbb'를 포함하는 문자열 |
+- 콘솔 로그 확인
+    
+  <p align="center"><img src="https://github.com/user-attachments/assets/0788f043-eb28-4da2-b730-ca1f7657d07c" alt="자바 콘솔 접속화면" width=600/></p>
+
+    
+    > ❓ `ESCAPE '\’`
+    > 
+    > - `%`, `_` 등의 특수 문자를 검색하려 할 때 `\`로 이스케이프할 수 있도록 설정
+    >     
+    >     ex) `WHERE subject LIKE '%50\%%' ESCAPE '\'` : "50%"를 포함한 문자열
+    >     
+
+<br>
+
+## [7] 질문 데이터 수정∙삭제하기
+
+### 1. 질문 데이터 수정
+
+1. 테스트 코드 작성
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import static org.junit.jupiter.api.Assertions.assertTrue;
+    
+    import java.util.Optional;
+    
+    import org.junit.jupiter.api.Test;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.boot.test.context.SpringBootTest;
+    
+    @SpringBootTest
+    class SbbApplicationTests {
+    	
+    	@Autowired
+    	private QuestionRepository questionRepository;
+    	
+    	@Test
+    	void testJpa() {
+    		Optional<Question> oq = this.questionRepository.findById(1);
+    		assertTrue(oq.isPresent());
+    		Question q = oq.get();
+    		q.setSubject("수정된 제목");
+    		this.questionRepository.save(q);
+    	}
+    
+    }
+    ```
+    
+    - 질문 엔티티의 데이터 조회 후 subject 속성 수정 → 변경된 질문을 데이터베이스에 저장하기 위해 레포지포리의 `save` 메서드 사용
+    
+    > `assertTrue()` : 괄호 안의 값이 `true`인지 테스트
+    > 
+    
+    > `oq.isPresent()` : `false` 리턴 시 오류 발생 후 테스트 종료
+    > 
+2. 테스트 수행 후 콘솔 로그 확인
+    
+   <p align="center"><img src="https://github.com/user-attachments/assets/ab24e156-b2f7-4060-813d-10657c591a55" alt="자바 콘솔 접속화면" width=400/></p>
+    
+4. 서버 실행 후 H2 콘솔 확인 
+    
+   <p align="center"><img src="https://github.com/user-attachments/assets/6699ebe3-e0de-4854-966b-aeafdc020bd6" alt="H2 콘솔 접속화면" width=600/></p>
+    
+
+### 2. 질문 데이터 삭제
+
+: 위의 question 테이블에서 id=1인 첫 번째 질문을 삭제해보자
+
+- 테스트 코드 수정
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    import static org.junit.jupiter.api.Assertions.assertTrue;
+    
+    import java.util.Optional;
+    
+    import org.junit.jupiter.api.Test;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.boot.test.context.SpringBootTest;
+    
+    @SpringBootTest
+    class SbbApplicationTests {
+    	
+    	@Autowired
+    	private QuestionRepository questionRepository;
+    	
+    	@Test
+    	void testJpa() {
+    		assertEquals(2, this.questionRepository.count()); //count : 테이블 행의 개수 리턴
+    		Optional<Question> oq = this.questionRepository.findById(1);
+    		assertTrue(oq.isPresent());
+    		Question q = oq.get();
+    		this.questionRepository.delete(q);
+    		assertEquals(1, this.questionRepository.count());
+    	}
+    
+    }
+    ```
+    
+    - 데이터 삭제 및 테이블의 데이터 삭제 전후 전체 행의 개수 확인
+
+      <p align="center"><img src="https://github.com/user-attachments/assets/7f2135cb-29bb-4880-8995-da963d2b8be7" alt="자바 콘솔 접속화면" width=400/></p>
+        
+- H2 콘솔에서 id가 1인 행이 삭제되었음을 확인
+    
+  <p align="center"><img src="https://github.com/user-attachments/assets/2a2f30a8-7777-448b-b0fa-c7d4d93f01fb" alt="H2 콘솔 접속화면" width=600/></p>
+    
+
+<br>
+
+**💻 2025.05.07**
+
+## [8] 답변 데이터 저장∙조회하기
+
+### 1. 답변 데이터 저장
