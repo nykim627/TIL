@@ -1,4 +1,4 @@
-# Chapter02. 스프링 부트의 기본 기능 익히기
+# Chapter02. 스프링 부트의 기본 기능 익히기 (1)
 > 📖 출처 : [점프 투 스프링부트](https://wikidocs.net/book/7601) 를 읽고 학습한 내용을 기반으로 작성한 TIL입니다.
 > 
 
@@ -1139,3 +1139,216 @@ class SbbApplicationTests {
 ## [8] 답변 데이터 저장∙조회하기
 
 ### 1. 답변 데이터 저장
+
+1. 테스트코드 수정
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    import static org.junit.jupiter.api.Assertions.assertTrue;
+    
+    import java.time.LocalDateTime;
+    import java.util.List;
+    import java.util.Optional;
+    
+    import org.junit.jupiter.api.Test;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.boot.test.context.SpringBootTest;
+    
+    @SpringBootTest
+    class SbbApplicationTests {
+    	
+    	@Autowired
+    	private QuestionRepository questionRepository;
+    	
+    	@Autowired
+    	private AnswerRepository answerRepository;
+    	
+    	@Test
+    	void testJpa() {
+    		Optional<Question> oq = this.questionRepository.findById(2);
+    		assertTrue(oq.isPresent());
+    		Question q = oq.get();
+    		
+    		Answer a = new Answer();
+    		a.setContent("네 자동으로 생성됩니다.");
+    		a.setQuestion(q); //어떤 질문의 답변인지 알기 위해서 Question 객체가 필요
+    		a.setCreateDate(LocalDateTime.now());
+    		this.answerRepository.save(a);
+    	}
+    
+    }
+    ```
+    
+    - 답변 데이터 저장을 위해 `AnswerRepository` 주입.
+    - 답변에 해당하는 질문을 우선 조회해서 가져온 후 답변의 `question` 속성에 대입해 답변 데이터 생성
+    - 테스트 성공 확인
+2. H2 콘솔 접속
+    
+   <p align="center"><img src="https://github.com/user-attachments/assets/528118f5-875d-43ae-942a-95d1d93041a6" alt="H2 콘솔 접속화면" width=600/></p>
+
+    
+
+### 2. 답변 데이터 조회
+
+: 답변 엔티티의 id 값을 활용해 데이터 조회하기
+
+- 테스트 코드 수정
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    import static org.junit.jupiter.api.Assertions.assertTrue;
+    
+    import java.time.LocalDateTime;
+    import java.util.List;
+    import java.util.Optional;
+    
+    import org.junit.jupiter.api.Test;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.boot.test.context.SpringBootTest;
+    
+    @SpringBootTest
+    class SbbApplicationTests {
+    	
+    	@Autowired
+    	private QuestionRepository questionRepository;
+    	
+    	@Autowired
+    	private AnswerRepository answerRepository;
+    	
+    	@Test
+    	void testJpa() {
+    		Optional<Answer> oa = this.answerRepository.findById(1); //답변 엔티티의 id값이 1인 답변 조회
+    		assertTrue(oa.isPresent());
+    		Answer a= oa.get();
+    		assertEquals(2,  a.getQuestion().getId()); //조회한 답변과 연결된 질문의 id가 2로 일치하는지 조회
+    	}
+    
+    }
+    ```
+    
+
+## [9] 답변 데이터를 통해 질문 데이터 찾기  VS  질문 데이터를 통해 답변 데이터 찾기
+
+### 1. 답변 데이터를 통해 질문 데이터 찾기
+
+```java
+a.getQuestion()   //a는 답변 객체이고, a.Question()은 답변에 연결된 질문 객체
+```
+
+- 답변에 연결된 질문 데이터를 찾는 것은 Answer 엔티티에 question 속성이 이미 정의되어 있으므로 매우 쉬움
+
+### 2. 질문 데이터를 통해 답변 데이터 찾기
+
+: `Question` 엔티티에 정의한 `answerList`를 사용하여 해결 가능
+
+- 테스트 코드 수정
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    import static org.junit.jupiter.api.Assertions.assertTrue;
+    
+    import java.time.LocalDateTime;
+    import java.util.List;
+    import java.util.Optional;
+    
+    import org.junit.jupiter.api.Test;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.boot.test.context.SpringBootTest;
+    
+    @SpringBootTest
+    class SbbApplicationTests {
+    	
+    	@Autowired
+    	private QuestionRepository questionRepository;
+    	
+    	@Autowired
+    	private AnswerRepository answerRepository;
+    	
+    	@Test
+    	void testJpa() {
+    		Optional<Question> oq = this.questionRepository.findById(2); 
+    		assertTrue(oq.isPresent());
+    		Question q = oq.get();
+    		
+    		List<Answer> answerList = q.getAnswerList(); //질문에 달린 답변 전체 구하기
+    		
+    		assertEquals(1, answerList.size()); //id가 2인 질문 데이터에 답변 데이터 1개 등록
+    		assertEquals("네 자동으로 생성됩니다.", answerList.get(0).getContent());
+    	}
+    
+    }
+    ```
+    
+- 그런데 위의 코드를 실행하면 다음과 같은 오류가 발생할 것
+    
+  <p align="center"><img src="https://github.com/user-attachments/assets/71c79427-f461-49a2-a794-07a7eebda195" alt="JUnit Test 결과화면" width=600/></p>
+
+    
+    - `QuestionRepository`가 `findById` 메서드를 통해 `Question` 객체를 조회하고 나면 DB 세션이 끊어지기 때문. 여기서 Question 조회 시 Answer는 아직 조회되지 않은 상태.
+        
+        > ❓ **DB 세션** : 스프링 부트 어플리케이션과 데이터베이스 간의 연결
+        > 
+    - `getAnswerList()`를 호출할 때 그제서야 해당 `Question`에 연결된 `Answer`들을 가져오기 위해 DB 접근을 시도
+        - `@SpringBootTest`에서 JUnit 테스트는 **트랜잭션을 롤백하면서 세션을 닫는데,** `questionRepository.findById(2)`로 가져온 객체는 **프록시 객체**로서 Answer 정보를 아직 가지고 있지 않음.
+        - 그 후 `getAnswerList()`를 호출하면 DB 세션을 통해 answerList를 조회하려 하지만, 이미 DB 세션이 종료되어 데이터를 가져오지 못하고 에러 발생
+        
+        > ❓ **지연(Lazy) 방식과 즉시(Eager) 방식**
+        > 
+        > - 지연 방식 : 위와 같이 데이터를 필요한 시점에 가져오는 방식
+        > - 즉시 방식 : q 객체를 조회할 때 미리 answer 리스트를 모두 가져오는 방식
+        > - `@OneToMany`, `@ManyToOne` 어노테이션의 옵션으로 `fetch=FetchType.LAZY` 또는 `fetch=FetchType.EAGER`처럼 가져오는 방식을 설정할 수 있지만, 이 책에서는 항상 기본값 사용(어노테이션마다 기본값 다름)
+- 해결 방법 : @Transactional 어노테이션 추가
+    - 실제 서버에서는 DB 세션이 종료되지 않기 때문에 이 문제는 테스트 코드에서만 발생할 것.
+    - 테스트 수행 시 오류 방지를 위한 방법은 `@Transactional` 어노테이션 사용하는 것! 해당 어노테이션 사용 시 메서드가 종료될 때까지 DB 세션(트랜잭션)이 유지됨
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    import static org.junit.jupiter.api.Assertions.assertTrue;
+    
+    import java.util.List;
+    import java.util.Optional;
+    
+    import org.junit.jupiter.api.Test;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.boot.test.context.SpringBootTest;
+    import org.springframework.transaction.annotation.Transactional;
+    
+    @SpringBootTest
+    class SbbApplicationTests {
+    	
+    	@Autowired
+    	private QuestionRepository questionRepository;
+    	
+    	@Autowired
+    	private AnswerRepository answerRepository;
+    	
+    	@Transactional
+    	@Test
+    	void testJpa() {
+    		Optional<Question> oq = this.questionRepository.findById(2); 
+    		assertTrue(oq.isPresent());
+    		Question q = oq.get();
+    		
+    		List<Answer> answerList = q.getAnswerList(); //질문에 달린 전체 답변 구하기
+    		
+    		assertEquals(1, answerList.size());
+    		assertEquals("네 자동으로 생성됩니다.", answerList.get(0).getContent());
+    	}
+    
+    }
+    ```
+    
+
+<br><br>
+
+---
+
+#springboot #java #lombok #jpa
