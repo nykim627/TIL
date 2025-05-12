@@ -120,3 +120,137 @@
         
       <p align="center"><img src="https://github.com/user-attachments/assets/587814ea-87bb-4f37-80ac-3322463612ef" alt="서버 실행 결과" width=500/></p>
         
+<br>
+
+**💻 2025.05.12**
+
+### 4. 데이터를 템플릿에 전달하기
+
+: 질문 목록이 담긴 데이터를 조회하여 이를 템플릿을 통해 화면에 전달하기
+
+- `QuestionController.java` 수정하기
+    - QuestionRepository로 질문 목록 조회 후 Model 클래스를 사용하여 템플릿에 전달하기
+    
+    ```java
+    package com.mysite.sbb.question;
+    
+    import java.util.List;
+    
+    import org.springframework.stereotype.Controller;
+    import org.springframework.ui.Model;
+    import org.springframework.web.bind.annotation.GetMapping;
+    
+    import lombok.RequiredArgsConstructor;
+    
+    @RequiredArgsConstructor
+    @Controller
+    public class QuestionController {
+    	
+    	private final QuestionRepository questionRepository;
+    	
+    	@GetMapping("/question/list")
+    //	@ResponseBody    //템플릿을 사용하기 때문에 필요없어짐
+    	public String list(Model model) {
+    		List<Question> questionList = this.questionRepository.findAll();
+    		model.addAttribute("questionList", questionList);
+    		return "question_list";   //템플릿 파일 이름 리턴
+    	}
+    }
+    ```
+    
+    - `@RequiredArgsConstructor` : 롬복(Lombok)이 제공하는 어노테이션으로, final이 붙은 속성을 포함하는 생성자를 자동으로 만들어 주는 역할
+    - `Model` 객체 : 자바 클래스와 템플릿 간의 연결 고리 역할
+        - 생성한 `questionList` 데이터를 ‘questionList’라는 이름으로 `Model` 객체에 저장
+        - `Model` 객체에 값을 담아두면 템플릿에서 그 값을 사용 가능
+        - `Model` 객체는 따로 생성할 필요 없이 컨트롤러의 메서드에 매개변수로 지정하기만 하면 **스프링 부트가 자동으로 Model 객체 생성**
+
+### 5. 데이터를 화면에 출력하기
+
+- `question_list.html` 템플릿 수정하기
+    
+    ```java
+    <h2>Hello Template</h2>
+    
+    <table>
+    	<thead>
+    		<tr>
+    			<th>제목</th>
+    			<th>작성일시</th>
+    		</tr>
+    	</thead>
+    	<tbody>
+    		<tr th:each="question : ${questionList}">
+    			<td th:text="${question.subject}"></td>
+    			<td th:text="${question.createDate}"></td>
+    		</tr>
+    	</tbody>
+    </table>
+    ```
+    
+    - `<tr th:each=”question : ${questionList}”>` 코드에 주목
+        - `th:` 는 타임리프에서 사용하는 속성임을 나타냄. 이 부분이 자바 코드와 연결됨
+        - `questionList`에 저장된 데이터를 하나씩 꺼내 `question` 변수에 대입한 후 `questionList`의 개수만큼 반복하며 `<tr> … </tr>` 문장을 출력하라는 의미 (like 자바의 for each)
+    - `<td th:text=”${question.subject}”></td>`
+        - `question` 객체의 subject를 `<td>` 태그로 출력하기 (createDate도 마찬가지)
+- 브라우저에서 다시 http://localhost:8080/question/list 에 접속하기
+
+  <p align="center"><img src="https://github.com/user-attachments/assets/9ce48d9d-d5e1-40f8-b95f-09b499385b6b" alt="서버 실행 결과 브라우저 화면" width=500></p>
+    
+    ⇒ 게시판의 웹페이지 하나 완성!
+    
+
+### 6. 자주 사용하는 타임리프(Timeleaf)의 3가지 속성
+
+: 타임리프의 여러 속성 중 다음 3가지 속성을 자주 사용. (이 3가지만 알아도 일반적인 화면 만들기에 충분!)
+
+1. 분기문 속성 (if문, else if문, …)
+    
+    ```java
+    th:if="${question != null}"
+    ```
+    
+    - question 객체가 null이 아닌 경우에만 이 속성을 포함한 요소가 표시됨
+2. 반복문 속성 (자바의 for each문과 유사)
+    
+    [방1]
+    
+    ```java
+    th:each="question : ${questionList}"
+    ```
+    
+    [방2]
+    
+    ```java
+    th:each="question, loop : ${questionList}"
+    ```
+    
+    - 추가한 loop 객체를 이용하여 루프 내에서 다음과 같이 사용 가능
+        - loop.index : 루프의 순서(루프의 반복 순서, **0부터** 1씩 증가)
+        - loop.count : 루프의 순서(루프의 반복 순서, **1부터** 1씩 증가)
+        - loop.size : 반복 객체의 요소 개수(크기) (ex. questionList의 요소 개수)
+        - loop.first : 루프의 첫 번째 순서인 경우 true 반환
+        - loop.last : 루프의 마지막 순서인 경우 true
+        - loop.odd : 루프의 홀수 번째 순서인 경우 true
+        - loop.even : 루프의 짝수 번째 순서인 경우 true
+        - loop.current : 현재 대입된 객체 (여기서는 question과 동일)
+3. 텍스트 속성 : 해당 요소의 텍스트값 출력
+    
+    ```java
+    th:text="${question.subject}"
+    ```
+    
+    - 텍스트는 `th:text` 속성 대신에 다음처럼 **대괄호를 사용하여 값을 직접 출력**할 수도 있음
+        
+        ```java
+        <tr th:each="question : ${questionList}">
+        	<td>[[${question.subject}]]</td>
+        	<td>[[${question.createDate}]]</td>
+        </tr>
+        ```
+        
+
+<br>
+
+**💻 2025.05.13**
+
+## [12] 루트 URL 사용하기
