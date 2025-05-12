@@ -212,13 +212,13 @@
     - question 객체가 null이 아닌 경우에만 이 속성을 포함한 요소가 표시됨
 2. 반복문 속성 (자바의 for each문과 유사)
     
-    [방1]
+    **[방1]**
     
     ```java
     th:each="question : ${questionList}"
     ```
     
-    [방2]
+    **[방2]**
     
     ```java
     th:each="question, loop : ${questionList}"
