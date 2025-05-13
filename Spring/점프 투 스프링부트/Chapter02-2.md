@@ -254,3 +254,77 @@
 **💻 2025.05.13**
 
 ## [12] 루트 URL 사용하기
+
+> ❓ **루트 URL**
+> 
+> - 서버의 URL을 요청할 때 도메인명 뒤에 아무런 주소도 덧붙이지 않는 URL
+>     
+>     ex)구글의 루트 URL은 google.com
+>     
+> - 루트 URL을 요청했을 때 보여지는 페이지를 메인 페이지라고 함
+
+: SBB 서비스도 루트 URL을 요청했을 때 질문 목록 화면으로 이동하도록 해보자.
+
+- MainController.java 수정하기
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import org.springframework.stereotype.Controller;
+    import org.springframework.web.bind.annotation.GetMapping;
+    import org.springframework.web.bind.annotation.ResponseBody;
+    
+    @Controller
+    public class MainController {
+    	
+    	@GetMapping("/sbb")
+    	@ResponseBody
+    	public String index() {
+    		return "안녕하세요 sbb에 오신 것을 환영합니다.";
+    	}
+    	
+    	@GetMapping("/")
+    	public String root() {
+    		return "redirect:/question/list";
+    	}
+    
+    }
+    ```
+    
+    - root 메서드 추가 후 `/` URL 매핑
+    - `redirect:/question/list` : `/question/list` URL로 페이지를 **리다이렉트**하라는 명령어
+        
+        > **❓ 리다이렉트**
+        > 
+        > - 클라이언트가 요청하면 새로운 URL로 전송하는 것
+    - 이제 루트 URL인 `localhost:8080`으로 접속하면 `localhost:8080/question/list`로 주소가 바뀌면서 질문 목록이 있는 웹 페이지로 연결됨
+
+<br>
+
+## [13] 서비스 활용하기
+
+: 질문 목록에서 질문의 제목을 클릭하면 해당 질문과 관련된 상세 내용이 담긴 화면으로 넘어가게끔 하려고 함
+
+- 지금까지는 `QuestionController`에서 `QuestionRepository`를 직접 접근해 질문 목록 데이터를 조회했지만, 대부분의 규모 있는 스프링 부트 프로젝트는 **컨트롤러에서 레포지토리를 직접 호출하지 않고 중간에 서비스(Service)를 두어 데이터를 처리**함. 서비스를 사용하여 SBB 프로그램을 개선해 보기.
+
+### 1. 서비스(Service) 이해하기
+
+- 스프링에서 데이터 처리를 위해 작성하는 클래스
+- 서비스 없이도 웹 프로그램을 동작시키는 데 문제가 없지만, 굳이 서비스를 사용하는 이유?
+    1. 복잡한 코드의 모듈화 가능
+        - A 컨트롤러와 B 컨트롤러가 모두 C라는 레포지토리의 메서드 a, b, c를 순서대로 실행할 때, 모듈화를 하지 않는다면 두 컨트롤러가 중복된 코드를 가지게 될 것.
+        - C 레포지토리의 메서드 a, b, c를 호출하는 기능을 서비스로 만들고(모듈화) 이 서비스를 호출하여 사용한다면, 모듈화가 가능
+    2. 앤티티 객체를 DTO 객체로 변환 가능
+        - 앞에서 작성한 Question, Answer 클래스는 모두 엔티티 클래스.
+        - 엔티티 클래스는 데이터베이스와 직접 맞닿아 있는 클래스이므로 컨트롤러 또는 타임리트와 같은 템플릿 엔진에 전달해 사용하는 것은 좋지 않음.
+            - 엔티티 객체에는 민감한 데이터가 포함될 수 있는데, 타임리프에서 엔티티 객체를 직접 사용하면 민감한 데이터가 노출될 위험이 있기 때문
+            
+            → 엔티티를 대신해 사용할 DTO(Data Transfer Object) 클래스가 필요
+            
+            → 엔티티 객체를 DTO 객체로 변환하는 작업도 필요
+            
+        
+        ⇒ 서비스는 컨트롤러와 레포지토리 중간에서 엔티티 객체와 DTO 객체를 서로 변환하는 처리를 수행한 후 양방향에 전달하는 역할을 함
+        
+        > 이 책은 간결한 설명을 위해 별도의 DTO를 만들지 않고 엔티티 객체를 컨트롤러와 타임리프에서 그대로 사용할 예정. **but 실제 프로그램을 개발할 때는 엔티티 클래스를 대신할 DTO 클래스를 만들어 사용하기를 권장!**
+        >
