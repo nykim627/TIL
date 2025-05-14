@@ -327,4 +327,77 @@
         ⇒ 서비스는 컨트롤러와 레포지토리 중간에서 엔티티 객체와 DTO 객체를 서로 변환하는 처리를 수행한 후 양방향에 전달하는 역할을 함
         
         > 이 책은 간결한 설명을 위해 별도의 DTO를 만들지 않고 엔티티 객체를 컨트롤러와 타임리프에서 그대로 사용할 예정. **but 실제 프로그램을 개발할 때는 엔티티 클래스를 대신할 DTO 클래스를 만들어 사용하기를 권장!**
-        >
+
+
+<br>
+
+**💻 2025.05.14**
+
+### 2. 서비스 만들기
+
+- com.mysite.sbb.question 패키지에 QuestionService.java 파일 생성 후 다음과 같이 코드 작성하기
+    
+    ```java
+    package com.mysite.sbb.question;
+    
+    import java.util.List;
+    
+    import org.springframework.stereotype.Service;
+    
+    import lombok.RequiredArgsConstructor;
+    
+    @RequiredArgsConstructor
+    @Service
+    public class QuestionService {
+    	private final QuestionRepository questionRepository;
+    	
+    	public List<Question> getList(){
+    		return this.questionRepository.findAll();
+    	}
+    }
+    
+    ```
+    
+    - 생성한 클래스를 서비스로 만들기 위해 클래스명 위에 @Service 어노테이션 작성 시 스프링 부트가 자동으로 서비스로 인식
+    - @RequiredArgsConstructor 과 final 선언을 통해 questionRepository 주입
+    - 질문 목록 데이터를 조회하여 리턴하는 getList 메서드 추가 (Controller의 list 메서드에 사용했던 코드를 그대로 사용)
+
+### 3. 컨트롤러에서 서비스 사용하기
+
+- [QuestionController.java](http://QuestionController.java) 파일로 돌아가 QuestionController가 레포지토리 대신 서비스를 사용하도록 수정하기
+    
+    ```java
+    package com.mysite.sbb.question;
+    
+    import java.util.List;
+    
+    import org.springframework.stereotype.Controller;
+    import org.springframework.ui.Model;
+    import org.springframework.web.bind.annotation.GetMapping;
+    
+    import lombok.RequiredArgsConstructor;
+    
+    @RequiredArgsConstructor
+    @Controller
+    public class QuestionController {
+    	
+    	private final QuestionService questionService;
+    	
+    	@GetMapping("/question/list")
+    //	@ResponseBody    //템플릿을 사용하기 때문에 필요없어짐
+    	public String list(Model model) {
+    		List<Question> questionList = this.questionService.getList();
+    		model.addAttribute("questionList", questionList);
+    		return "question_list";   //템플릿 파일 이름 리턴
+    	}
+    }
+    
+    ```
+    
+    - repository → service로 모두 변경
+    - http://localhost:8080/question/list 페이지에 접속하면 레포지토리를 사용했을 때와 동일한 화면 확인 가능
+        
+        <p align="center"><img src="https://github.com/user-attachments/assets/173e8e8d-8a68-46ae-9871-f7ba1fffb4fe" width="500"></p>
+
+        
+- 앞으로 작성할 다른 컨트롤러들도 이와 같이 레포지토리를 직접 사용하지 않고 **컨트롤러 → 서비스 → 레포지토리** 순서로 접근하는 과정을 거쳐 데이터를 처리할 것!
