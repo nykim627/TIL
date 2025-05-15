@@ -396,8 +396,118 @@
     
     - repository → service로 모두 변경
     - http://localhost:8080/question/list 페이지에 접속하면 레포지토리를 사용했을 때와 동일한 화면 확인 가능
-        
         <p align="center"><img src="https://github.com/user-attachments/assets/173e8e8d-8a68-46ae-9871-f7ba1fffb4fe" width="500"></p>
 
         
 - 앞으로 작성할 다른 컨트롤러들도 이와 같이 레포지토리를 직접 사용하지 않고 **컨트롤러 → 서비스 → 레포지토리** 순서로 접근하는 과정을 거쳐 데이터를 처리할 것!
+ 
+<br>
+
+**💻 2025.05.15**
+
+## [14] 상세 페이지 만들기
+
+: 질문 목록에서 질문의 제목을 클릭하면 해당 질문과 관련된 상세 내용이 담긴 페이지로 넘어가게끔 기능을 추가해보자
+
+### 1. 질문 목록의 제목에 링크 추가하기
+
+- question_list.html 수정
+    
+    ```html
+    <h2>Hello Template</h2>
+    
+    <table>
+    	<thead>
+    		<tr>
+    			<th>제목</th>
+    			<th>작성일시</th>
+    		</tr>
+    	</thead>
+    	<tbody>
+    		<tr th:each="question : ${questionList}">
+    			<td>
+    				<a th:href="@{|/question/detail/${question.id}|}" th:text="${question.subject}"></a>
+    			</td>
+    			<td th:text="${question.createDate}"></td>
+    		</tr>
+    	</tbody>
+    </table>
+    ```
+    
+    - <td> 태그 내에 <a> 태그 추가하여 질문의 상세 내용이 담긴 웹페이지로 이동할 수 있는 링크로 변경
+    - 제목에 상세 페이지 **URL을 연결하기 위해 타임리프의 th:href 속성 사용**
+        - 규칙1) URL은 반드시 `@{`와 `}` 문자 사이에 입력해야 함
+        - 규칙2) 문자열과 자바 객체의 값을 더할 때는 좌우를 반드시 `|`로 감싸 주어야 함!
+            - `/question/detail/`(문자열)과 `${question.id}`(자바 객체) 값을 조합하여 `/question/detail/${question.id}`로 작성
+
+### 2. 상세 페이지 컨트롤러 만들기
+
+1. 브라우저를 통해 질문 목록 페이지에 접속하여 링크를 클릭해보면, 다음과 같은 오류가 발생할 것
+
+   <p align="center"><img src="https://github.com/user-attachments/assets/06c111d4-ac7b-4810-a738-44100fe1e0de" width=500></p>
+    
+   <p align="center"><img src="https://github.com/user-attachments/assets/5dae5109-b95d-494a-a136-7558a3fb288e" width=500></p>
+
+    
+    - 아직 `http://localhost:8080/question/detail/2` 를 매핑하지 않았기 때문에 404 오류 발생
+3. QuestionController에 질문 상세 페이지 URL을 매핑하기
+    
+    ```java
+    package com.mysite.sbb.question;
+    
+    import java.util.List;
+    
+    import org.springframework.stereotype.Controller;
+    import org.springframework.ui.Model;
+    import org.springframework.web.bind.annotation.GetMapping;
+    import org.springframework.web.bind.annotation.PathVariable;
+    
+    import lombok.RequiredArgsConstructor;
+    
+    @RequiredArgsConstructor
+    @Controller
+    public class QuestionController {
+    	
+    	private final QuestionService questionService;
+    	
+    	@GetMapping("/question/list")
+    //	@ResponseBody    //템플릿을 사용하기 때문에 필요없어짐
+    	public String list(Model model) {
+    		List<Question> questionList = this.questionService.getList();
+    		model.addAttribute("questionList", questionList);
+    		return "question_list";   //템플릿 파일 이름 리턴
+    	}
+    	
+    	@GetMapping(value = "/question/detail/{id}")
+    	public String detail(Model model, @PathVariable("id") Integer id) {
+    		return "question_detail";
+    	}
+    }
+    
+    ```
+    
+    - 변하는 파라미터값(id)을 얻을 때메는 `@PathVariable` 어노테이션 사용.
+        - `@GetMapping(value=”/question/detail/{id}”)`에서 사용한 id와 `@PathVariable(”id”)`의 매개변수 이름이 동일해야 함!!
+    - 다시 로컬 서버 실행 후 브라우저에서 해당 URL을 입력하면 404가 아닌 500 에러가 발생.
+
+     <p align="center"><img src="https://github.com/user-attachments/assets/b3f457f3-6de9-4723-9b1e-255e8aa86b4b" width=500></p>
+
+        
+        - 응답으로 리턴한 quesiton_detail 템플릿이 없기 때문
+4. 응답 템플릿 생성하기
+    - templates에 question_detail.html 파일 새로 생성 후 다음 내용 작성
+    
+    ```html
+    <h1>제목</h1>
+    <div>내용</div>
+    ```
+    
+    - 다시 로컬 서버 재시작 후 URL 요청 시 오류 없이 다음과 같은 화면 출력!
+        
+      <p align="center"><img src="https://github.com/user-attachments/assets/2bb0d0ba-730e-43e3-84cf-468ea0f6f594" width=500></p>
+
+
+<br>
+
+**💻 2025.05.16**
+        
