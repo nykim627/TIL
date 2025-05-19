@@ -510,4 +510,244 @@
 <br>
 
 **💻 2025.05.16**
+
+### 3. 상세 페이지 출력하기
+
+: 화면에 문자열 대신 질문 데이터의 제목과 내용을 출력하기
+
+1. 질문데이터 조회 : `QuestionService.java` 수정하기 
+    
+    ```java
+    package com.mysite.sbb.question;
+    
+    import java.util.List;
+    import java.util.Optional;
+    
+    import org.springframework.boot.context.config.ConfigDataLocationNotFoundException;
+    import org.springframework.boot.context.config.ConfigDataNotFoundException;
+    import org.springframework.stereotype.Service;
+    
+    import lombok.RequiredArgsConstructor;
+    
+    @RequiredArgsConstructor
+    @Service
+    public class QuestionService {
+    	private final QuestionRepository questionRepository;
+    	
+    	public List<Question> getList(){
+    		return this.questionRepository.findAll();
+    	}
+    	
+    	public Question getQuestion(Integer id) {
+    		Optional<Question> question = this.questionRepository.findById(id);
+    		if(question.isPresent()) {
+    			return question.get();
+    		}else {
+    			throw new DataNotFoundException("question not found"); //현재 해당 클래스 존재x
+    		}
+    	}
+    }
+    
+    ```
+    
+2. `DataNotFoundException` 클래스 정의하기 (com.mysite.sbb 패키지에 생성)
+    
+    ```java
+    package com.mysite.sbb;
+    
+    import org.springframework.http.HttpStatus;
+    import org.springframework.web.bind.annotation.ResponseStatus;
+    
+    @ResponseStatus(value = HttpStatus.NOT_FOUND, reason = "entity not found")
+    public class DataNotFoundException extends RuntimeException{
+    	private static final long serialVersionUID = 1L;
+    	public DataNotFoundException(String message) {
+    		super(message);
+    	}
+    }
+    ```
+    
+    - 이 예외 발생 시 스프링 부트는 설정한 HTTP 상태 코드(404 - not found)와 이유를 포함한 응답을 생성하여 클라이언트에게 반환함
+    
+    > ❓ RuntimeException : 실행 시 발생하는 예외
+    > 
+3. `QuestionController.java` 수정하기
+    
+    ```java
+    package com.mysite.sbb.question;
+    
+    import java.util.List;
+    
+    import org.springframework.stereotype.Controller;
+    import org.springframework.ui.Model;
+    import org.springframework.web.bind.annotation.GetMapping;
+    import org.springframework.web.bind.annotation.PathVariable;
+    
+    import lombok.RequiredArgsConstructor;
+    
+    @RequiredArgsConstructor
+    @Controller
+    public class QuestionController {
+    	
+    	private final QuestionService questionService;
+    	
+    	@GetMapping("/question/list")
+    //	@ResponseBody    //템플릿을 사용하기 때문에 필요없어짐
+    	public String list(Model model) {
+    		List<Question> questionList = this.questionService.getList();
+    		model.addAttribute("questionList", questionList);
+    		return "question_list";   //템플릿 파일 이름 리턴
+    	}
+    	
+    	@GetMapping(value = "/question/detail/{id}")
+    	public String detail(Model model, @PathVariable("id") Integer id) {
+    		Question question = this.questionService.getQuestion(id);   //service 호출
+    		model.addAttribute("question", question);   //question 객체를 템플릿에 저장 
+    		return "question_detail";
+    	}
+    }
+    ```
+    
+4. `question_detail.html` 수정하기
+    
+    ```html
+    <h1 th:text="${question.subject}"></h1>  //저장해둔 question 객체 사용하기
+    <div th:text="${question.content}"></div>
+    ```
+    
+5. 이후 상세 페이지를 다시 요청하면 아래와 같은 화면 확인 가능
+    
+   <p align="center"><img src="https://github.com/user-attachments/assets/e0a9349c-3b78-4054-8126-d9b32b5912d7" width=500></p>
+
+    
+    - 아래와 같이 존재하지 않는 id값에 대한 페이지 요청 시 아래와 같이 DataNotFoundException 예외 클래스가 실행되어 404 NOT FOUND 에러와 설정해 둔 에러 메시지가 출력됨
+        
+      <p align="center"><img src="https://github.com/user-attachments/assets/b8109199-bf33-488e-aeaf-3821ec50ac58" width=500></p>
+        
+
+### 4. URL 프리픽스 알아두기
+
+: `QuestionController`에 속하는 URL 매핑은 항상 `/question` 프리픽스로 시작하도록 설정하기
+
+- `QuestionController` 클래스명 위에 `@RequestMapping(”/question”)` 어노테이션을 추가하고, 클래스 내부의 메서드 단위에서는 /question을 생략하고 그 뒷부분만을 적으면 됨
+    
+    (아래 코드의 RequestMapping, GetMapping 확인)
+    
+    ```java
+    package com.mysite.sbb.question;
+    
+    import java.util.List;
+    
+    import org.springframework.stereotype.Controller;
+    import org.springframework.ui.Model;
+    import org.springframework.web.bind.annotation.GetMapping;
+    import org.springframework.web.bind.annotation.PathVariable;
+    import org.springframework.web.bind.annotation.RequestMapping;
+    
+    import lombok.RequiredArgsConstructor;
+    
+    @RequestMapping("/question")
+    @RequiredArgsConstructor
+    @Controller
+    public class QuestionController {
+    	
+    	private final QuestionService questionService;
+    	
+    	@GetMapping("/list")
+    //	@ResponseBody    //템플릿을 사용하기 때문에 필요없어짐
+    	public String list(Model model) {
+    		List<Question> questionList = this.questionService.getList();
+    		model.addAttribute("questionList", questionList);
+    		return "question_list";   //템플릿 파일 이름 리턴
+    	}
+    	
+    	@GetMapping(value = "/detail/{id}")
+    	public String detail(Model model, @PathVariable("id") Integer id) {
+    		Question question = this.questionService.getQuestion(id);   //service 호출
+    		model.addAttribute("question", question);   //question 객체를 템플릿에 저장 
+    		return "question_detail";
+    	}
+    }
+    
+    ```
+    
+- 다른 프로젝트 진행 시 컨트롤러의 성격에 맞게 프리픽스 사용 여부를 결정하자
+
+## [15] 답변 기능 만들기
+
+: 질문에 답변을 입력하고, 입력한 답변을 질문 상세 페이지해서 확인할 수 있도록 구현해보자
+
+### 1. 텍스트 창과 등록 버튼 만들기
+
+: 질문 상세 페이지에서 답변을 입력하는 텍스트 창을 만들고, 답변을 등록하기 위한 [답변 등록] 버튼을 생성해 보자
+
+1. `question_detail.html` 수정하기
+    
+    ```html
+    <h1 th:text="${question.subject}"></h1>
+    <div th:text="${question.content}"></div>
+    
+    <form th:action="@{|/answer/create/${question.id}|" method="post">
+    	<textarea name="content" id="content" rows="15"></textarea>
+    	<input type="submit" value="답변등록">
+    </form>
+    ```
+    
+2. 로컬 서버 실행 후 질문 상세 페이지 접속
+    - 답변을 입력할 수 있는 텍스트창과 [답변 등록] 버튼 생성
+    - 텍스트 창에 답변을 작성하고, [답변 등록] 버튼을 클릭하면 /answer/create/2 (’2’는 질문 데이터의 고유 번호)와 같은 URL이 post 방식으로 호출될 것!
+3. 아직 URL을 매핑하지 않았으므로 버튼을 누르면 다음과 같은 404 페이지가 나타남
+    
+    > POST 방식은 주로 데이터를 저장하는 용도로 사용한다는 점을 한 번 더 상기하자
+    > 
+    
+    → 오류 해결을 위해 답변 컨트롤러를 만들고 URL을 매핑하자
+    
+
+### 2. 답변 컨트롤러 만들기
+
+1. `/answer/AnswerController.java` 생성 후 내용 작성
+    
+    ```java
+    package com.mysite.sbb.answer;
+    
+    import org.springframework.stereotype.Controller;
+    import org.springframework.ui.Model;
+    import org.springframework.web.bind.annotation.PathVariable;
+    import org.springframework.web.bind.annotation.RequestMapping;
+    import org.springframework.web.bind.annotation.RequestParam;
+    
+    import com.mysite.sbb.question.Question;
+    import com.mysite.sbb.question.QuestionService;
+    
+    import lombok.RequiredArgsConstructor;
+    
+    @RequestMapping("/answer")
+    @RequiredArgsConstructor
+    @Controller
+    public class AnswerController {
+    	
+    	private final QuestionService questionService;
+    	
+    	public String createAnswer(Model model, @PathVariable("id") Integer id, @RequestParam(value="content") String content) {
+    		Question question = this.questionService.getQuestion(id);
+    		
+    		// TODO: 답변을 저장한다
+    		return String.format("redirect:/question/detail/%s",  id);
+    	}
+    }
+    
+    ```
+    
+    - `/answer/create/{id}`와 같은 URL 요청 시 `createAnswer` 메서드가 호출되도록 `@PostMapping` 매핑 (post 요청을 처리하기 때문)
+    - `@RequestParam(value=”content”) String content` : 앞서 작성한 템플릿(`question_detail.html`)에서 답변으로 입력한 내용(content)을 얻기 위해 추가한 것
+        - value는 템플릿 `<textarea>`의 name 속성명과 매핑
+    - `/create/{id}`에서 `{id}`는 질문 엔티티의 id이므로 이 id 값으로 질문을 조회하고 값이 없을 경우는 404 오류 발생
+        
+        > `// TODO :`(해야할일)와 같이 주석을 작성하여 개발자들이 주로 코드 내에서 아직 해결되지 않은 문제나 추가로 작업해야 하는 부분을 표시함.
+        > 
+
+<br>
+
+**💻 2025.05.20**
         
