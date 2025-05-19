@@ -694,9 +694,14 @@
     ```
     
 2. 로컬 서버 실행 후 질문 상세 페이지 접속
+   
+    <p align="center"><img src="https://github.com/user-attachments/assets/9a0342b9-64fa-4fd9-ad6f-c71375979837" width=500></p>
+   
     - 답변을 입력할 수 있는 텍스트창과 [답변 등록] 버튼 생성
     - 텍스트 창에 답변을 작성하고, [답변 등록] 버튼을 클릭하면 /answer/create/2 (’2’는 질문 데이터의 고유 번호)와 같은 URL이 post 방식으로 호출될 것!
-3. 아직 URL을 매핑하지 않았으므로 버튼을 누르면 다음과 같은 404 페이지가 나타남
+4. 아직 URL을 매핑하지 않았으므로 버튼을 누르면 다음과 같은 404 페이지가 나타남
+
+    <p align="center"><img src="https://github.com/user-attachments/assets/484754f7-8d6e-4658-a691-bedbcbdbb47a" width=500></p>
     
     > POST 방식은 주로 데이터를 저장하는 용도로 사용한다는 점을 한 번 더 상기하자
     > 
@@ -742,10 +747,10 @@
     - `/answer/create/{id}`와 같은 URL 요청 시 `createAnswer` 메서드가 호출되도록 `@PostMapping` 매핑 (post 요청을 처리하기 때문)
     - `@RequestParam(value=”content”) String content` : 앞서 작성한 템플릿(`question_detail.html`)에서 답변으로 입력한 내용(content)을 얻기 위해 추가한 것
         - value는 템플릿 `<textarea>`의 name 속성명과 매핑
-    - `/create/{id}`에서 `{id}`는 질문 엔티티의 id이므로 이 id 값으로 질문을 조회하고 값이 없을 경우는 404 오류 발생
-        
-        > `// TODO :`(해야할일)와 같이 주석을 작성하여 개발자들이 주로 코드 내에서 아직 해결되지 않은 문제나 추가로 작업해야 하는 부분을 표시함.
-        > 
+    - `/create/{id}`에서 `{id}`는 질문 엔티티의 id이므로 이 id 값으로 질문을 조회하고 값이 없을 경우는 404 오류 발생 
+
+    > `// TODO :`(해야할일)와 같이 주석을 작성하여 개발자들이 주로 코드 내에서 아직 해결되지 않은 문제나 추가로 작업해야 하는 부분을 표시함.
+    >
 
 <br>
 
