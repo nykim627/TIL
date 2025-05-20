@@ -755,4 +755,109 @@
 <br>
 
 **💻 2025.05.20**
+
+### 3. 답변 서비스 만들기
+
+1. `/answer/AnswerService.java` 생성 후 코드 작성
+    
+    ```java
+    package com.mysite.sbb.answer;
+    
+    import java.time.LocalDateTime;
+    
+    import org.springframework.stereotype.Service;
+    
+    import com.mysite.sbb.question.Question;
+    
+    import lombok.RequiredArgsConstructor;
+    
+    @RequiredArgsConstructor
+    @Service
+    public class AnswerService {
+    
+    	private final AnswerRepository answerRepository;
+    	
+    	public void create(Question question, String content) {
+    		Answer answer = new Answer();
+    		answer.setContent(content);
+    		answer.setCreateDate(LocalDateTime.now());
+    		answer.setQuestion(question);
+    		this.answerRepository.save(answer);
+    	}
+    }
+    
+    ```
+    
+    - 답변 생성 위한 `create` 메서드 추가 : 새로운 answer 객체 생성 후 입력받은 두개의 변수인 question, content를 추가함
+2. `AnswerController.java` 수정
+    
+    ```java
+    package com.mysite.sbb.answer;
+    
+    import org.springframework.stereotype.Controller;
+    import org.springframework.ui.Model;
+    import org.springframework.web.bind.annotation.PathVariable;
+    import org.springframework.web.bind.annotation.PostMapping;
+    import org.springframework.web.bind.annotation.RequestMapping;
+    import org.springframework.web.bind.annotation.RequestParam;
+    
+    import com.mysite.sbb.question.Question;
+    import com.mysite.sbb.question.QuestionService;
+    
+    import lombok.RequiredArgsConstructor;
+    
+    @RequestMapping("/answer")
+    @RequiredArgsConstructor
+    @Controller
+    public class AnswerController {
+    	
+    	private final QuestionService questionService;
+    	private final AnswerService answerService;
+    	
+    	@PostMapping("/create/{id}")
+    	public String createAnswer(Model model, @PathVariable("id") Integer id, @RequestParam(value="content") String content) {
+    		Question question = this.questionService.getQuestion(id);
+    		this.answerService.create(question, content);  //답변저장 코드 추가!!
+    		return String.format("redirect:/question/detail/%s",  id);
+    	}
+    }
+    
+    ```
+    
+    - TODO 주석문 삭제 후 그 자리에 AnswerService의 create 메서드 호출하여 답변 저장
+3. 다시 질문 상세 페이지(http://localhost:8080/question/detail/2)에 접속하여 테스트 창에 아무거나 입력 후 [답변 등록] 버튼 클릭해보자
+    
+    <p align="center"><img src="https://github.com/user-attachments/assets/a8914e6d-799f-4b9b-9553-4de23666503a" width="500"></p>
+
+    
+    - 현 상태에서는 확인할 수 없지만 답변은 잘 생성됨. 생성된 답변을 화면에 표시하도록 템플릿을 수정해야 함!!
+
+### 4. 상세 페이지에 답변 표시하기
+
+1. `question_detail.html` 수정
+    
+    ```html
+    <h1 th:text="${question.subject}"></h1>
+    <div th:text="${question.content}"></div>
+    
+    <h5 th:text="|${#lists.size(question.answerList)}개의 답변이 있습니다.|"></h5>
+    <div>
+    	<ul>
+    		<li th:each="answer : ${question.answerList}" th:text="${answer.content}"></li>
+    	</ul>
+    </div>
+    
+    <form th:action="@{|/answer/create/${question.id}|}" method="post">
+    	<textarea name="content" id="content" rows="15"></textarea>
+    	<input type="submit" value="답변등록">
+    </form>
+    ```
+    
+    - `#lists.size(question.answerList)` : 답변개수
+        - `#lists.size(객체)` : 타임리프에서 제공하는 함수로, 해당 객체의 길이를 반환함
+
+1. 질문 상세 페이지를 새로고침하면 등록한 답변이 화면에 보일 것!
+
+   <p align="center"><img src="https://github.com/user-attachments/assets/617a1b56-aa39-4492-985a-c5652dfeed0c" width="500"></p>
+    
         
