@@ -189,4 +189,163 @@ bootstrap-5.3.6-dist.zip
 
 <br>
 
-**💻 2025.05.22**
+**💻 2025.06.10**
+
+## [18] 표준 HTML 구조로 변경하기
+
+### 1. 표준 HTML 구조 살펴보기
+
+**[표준 HTML 구조의 예]**
+
+```jsx
+<!doctype html>
+<html lang="ko">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" type="text/css" th:href="@{/bootstrap.min.css}">
+    <!-- sbb CSS -->
+    <link rel="stylesheet" type="text/css" th:href="@{/style.css}">
+    <title>Hello, sbb!</title>
+</head>
+<body>
+(... 생략 ...)
+</body>
+</html>
+
+```
+
+- 표준 HTML 문서의 구조는 `html`, `head`, `body` 요소가 있어야 하며, `<head>` 태그 안에는 css 파일,`meta`, `title` 요소 등이 포함되어야 함.
+- `question_list.html`, `question_detail.html` 템플릿을 웹 표준을 지키는 HTML 문서로 작성해보자
+- 타임리프의 템플릿 상속 기능을 활용하여 기본 틀이 되는 템플릿을 먼저 작성하고 다른 템플릿에서 그 템플릿을 상속해 사용해보자.
+
+### 2. layout.html로 기본 틀 만들기
+
+`[파일명: /templates/layout.html]`
+
+```jsx
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<!-- Required meta tags -->
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<!-- Bootstrap CSS -->
+	<link rel="stylesheet" type="text/css" th:href="@{/bootstrap.min.css}">
+	<!--  sbb CSS -->
+	<link rel="stylesheet" type="text/css" th:href="@{/style.css}">
+	<title>Hello, sbb!</title>
+</head>
+<body>
+<!-- 기본 템플릿 안에 삽입될 내용 Start -->
+<th:block layout:fragment="content"></th:block>
+<!-- 기본 템플릿 안에 삽입될 내용 End -->
+</body>
+</html>
+```
+
+- 모든 템플릿이 상속해야 하는 템플릿으로, 표준 HTML 문서 구조로 정리된 기본 틀
+- body 요소 안의 `<th:block layout:fragment=”content”></th:block>`은 `layout.html`을 상속한 템플릿에서 개별적으로 구현해야 하는 영역이 됨
+    - 즉, `layout.html` 템플릿 상속 시 해당 영역만 수정해도 표준 HTML 문서로 작성됨
+
+### 3. 템플릿 상속하기
+
+1. `quesion_list.html`에 템플릿 상속하기
+    
+    ```jsx
+    <html layout:decorate="~{layout}"> <!-- 추가 -->
+    
+    <div layout:fragment="content" class="container my-3"> <!-- 수정 -->
+    	<table class="table"> 
+    		<thead class="table-dark">
+    			<tr>
+    				<th>번호</th>
+    				<th>제목</th>
+    				<th>작성일시</th>
+    			</tr>
+    		</thead>
+    		<tbody>
+    			<tr th:each="question, loop : ${questionList}"> 
+    				<td th:text="${loop.count}"></td> 
+    				<td>
+    					<a th:href="@{|/question/detail/${question.id}|}" th:text="${question.subject}"></a>
+    				</td>
+    				<td th:text="${#temporals.format(question.createDate, 'yyyy-MM-dd HH:mm')}"></td> 
+    			</tr>
+    		</tbody>
+    	</table>
+    </div>
+    
+    <html> <!-- 추가 -->
+    ```
+    
+    - `layout.html` 템플릿을 상속하기 위해 `<html layout:decorate=”~{layout}”>` 사용
+        - `layout:decorate` : 템플릿의 레이아웃으로 사용할 부모 템플릿 설정
+    - 부모 템플릿에 작성된 `layout:fragment=”content”` 부분 사용
+        - 부모 템플릿의 `th:block` 요소의 내용이 자식 템플릿의 `div` 요소의 내용으로 교체됨
+    - 결과화면
+        
+      <p align="center"><img src="https://github.com/user-attachments/assets/f1b639ad-7904-4690-92cc-bf6c0b9e6376"></p>
+
+        
+        - 화면에 보여지는 것은 동일하지만 표준 HTML 구조로 변경됨. (페이지 소스 보기 클릭후 HTML 코드 확인 가능)
+            
+          <p align="center"><img src="https://github.com/user-attachments/assets/19ff96ab-99f0-4ab9-89c3-a866ac999dcc"></p>
+
+            
+        
+2. `question_detail.html`에 템플릿 상속하기
+    
+    ```jsx
+    <html layout:decorate="~{layout}"> <!-- 추가 -->
+    
+    <div layout:fragment="content" class="container my-3"> <!-- 수정 -->
+    	<!-- 질문 -->
+    	<h2 class="border-bottom py-2" th:text="${question.subject}"></h2>
+    	<div class="card my-3">
+    		<div class="card-body">
+    			<div class="card-text" style="white-space: pre-line"; th:text="${question.content}"></div>
+    			<div class="d-flex justify-content-end">
+    				<div class="badge bg-light text-dark p-2 text-start">
+    					<div th:text="${#temporals.format(question.createDate, 'yyyy-MM-dd HH:mm')}"></div>
+    				</div>
+    			</div>
+    		</div>
+    	</div>
+    	<!-- 답변의 개수 표시 -->
+    	<h5 class="border-bottom my-3 py-2"
+    		th:text="|${#lists.size(question.answerList)}개의 답변이 있습니다.|"></h5>
+    	<!-- 답변 반복 시 -->
+    	<div class="card my-3" th:each="answer : ${question.answerList}">
+    		<div class="card-body">
+    			<div class="card-text" style="white-space: pre-line;" th:text="${answer.content}"></div>
+    			<div class="d-flex justify-content-end">
+    				<div class="badge bg-light text-dark p-2 text-start">
+    					<div th:text="${#temporals.format(answer.createDate, 'yyyy-MM-dd HH:mm')}"></div>
+    				</div>
+    			</div>
+    		</div>
+    	</div>
+    	<!-- 답변 반복 끝 -->
+    	<!-- 답변 작성 -->
+    	<form th:action="@{|/answer/create/${question.id}|}" method="post" class="my-3">
+    		<textarea name="content" id="content" rows="10" class="form-control"></textarea>
+    		<input type="submit" value="답변등록" class="btn btn-primary my-2">
+    	</form>
+    </div>
+    
+    </html> <!-- 추가 -->
+    ```
+    
+    - 1번과 동일한 방법으로 `layout.html` 템플릿 상속
+    - 페이지 소스 확인 화면(결과화면은 동일)
+        
+      <p align="center"><img src="https://github.com/user-attachments/assets/bcbab4ae-133c-480c-b280-cc7ccfc47173"></p>
+
+        
+
+<br>
+
+**💻 2025.06.11**
